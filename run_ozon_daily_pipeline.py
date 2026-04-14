@@ -1,6 +1,7 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List
 
 from ozon_lib import (
@@ -26,6 +27,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--days', type=int, default=7, help='统计天数，默认 7')
     parser.add_argument('--store', type=str, default='', help='指定店铺名称或店铺代号')
     parser.add_argument('--limit-campaigns', type=int, default=0, help='广告活动数量限制，0 表示不限制')
+    parser.add_argument('--max-workers', type=int, default=4, help='店铺级并发数')
+    parser.add_argument('--include-details', action='store_true', help='包含完整模块明细（默认仅输出预览）')
     return parser
 
 
@@ -348,30 +351,151 @@ def merge_store_result(store: Dict[str, Any], days: int, limit_campaigns: int | 
     return result
 
 
+def _store_failure_result(store: Dict[str, Any], *, days: int, error: Exception) -> Dict[str, Any]:
+    identity = get_store_identity(store)
+    return {
+        **identity,
+        'days': days,
+        'ads': None,
+        'orders': None,
+        'pricing': None,
+        'sku_risk': None,
+        'sales': None,
+        'logistics': None,
+        'status': 'error',
+        'errors': [{'module': 'daily', 'error': str(error)}],
+        'overview': {},
+        'flags': [],
+        'health_score': 0,
+        'insights': [],
+        'recommendations': [],
+    }
+
+
+def merge_store_results(
+    stores: List[Dict[str, Any]],
+    *,
+    days: int,
+    limit_campaigns: int | None,
+    max_workers: int = 4,
+) -> List[Dict[str, Any]]:
+    if not stores:
+        return []
+
+    workers = max(1, min(require_positive_int(max_workers, field='max_workers'), len(stores)))
+    if workers == 1:
+        return [
+            merge_store_result(store, days=days, limit_campaigns=limit_campaigns)
+            for store in stores
+        ]
+
+    results: List[Dict[str, Any] | None] = [None] * len(stores)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        future_to_index = {
+            executor.submit(merge_store_result, store, days=days, limit_campaigns=limit_campaigns): index
+            for index, store in enumerate(stores)
+        }
+        for future in as_completed(future_to_index):
+            index = future_to_index[future]
+            store = stores[index]
+            try:
+                results[index] = future.result()
+            except Exception as exc:
+                results[index] = _store_failure_result(store, days=days, error=exc)
+
+    return [result for result in results if result is not None]
+
+
+def _trim_list(value: Any, limit: int) -> Any:
+    if isinstance(value, list):
+        return value[:limit]
+    return value
+
+
+def _compact_module(
+    module: Any,
+    *,
+    drop_keys: List[str] | None = None,
+    list_limits: Dict[str, int] | None = None,
+) -> Any:
+    if not isinstance(module, dict):
+        return module
+    compact = dict(module)
+    for key in (drop_keys or []):
+        compact.pop(key, None)
+    for key, limit in (list_limits or {}).items():
+        compact[key] = _trim_list(compact.get(key), limit)
+    return compact
+
+
+def compact_store_result(result: Dict[str, Any]) -> Dict[str, Any]:
+    compact = dict(result)
+    compact['ads'] = _compact_module(
+        result.get('ads'),
+        drop_keys=['detail'],
+        list_limits={'alerts': 20},
+    )
+    compact['orders'] = _compact_module(
+        result.get('orders'),
+        list_limits={'postings_preview': 20},
+    )
+    compact['pricing'] = _compact_module(
+        result.get('pricing'),
+        list_limits={'risky_items_preview': 30},
+    )
+    compact['sales'] = _compact_module(
+        result.get('sales'),
+        list_limits={'operations_preview': 30},
+    )
+    compact['logistics'] = _compact_module(
+        result.get('logistics'),
+        list_limits={'warehouses': 30, 'stock_items_preview': 50},
+    )
+    compact['sku_risk'] = _compact_module(
+        result.get('sku_risk'),
+        drop_keys=['sku_risks'],
+        list_limits={'sku_risks_preview': 50},
+    )
+    return compact
+
+
+def compact_store_results(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return [compact_store_result(result) for result in results]
+
+
 def main() -> None:
     try:
         args = build_parser().parse_args()
         require_positive_int(args.days, field='days')
         require_non_negative_int(args.limit_campaigns, field='limit_campaigns')
+        require_positive_int(args.max_workers, field='max_workers')
         config = load_config()
         store_filter = (args.store or '').strip()
         selected: List[Dict[str, Any]] = select_stores(config, store_filter)
 
-        results = [merge_store_result(store, days=args.days, limit_campaigns=(args.limit_campaigns or None)) for store in selected]
+        results = merge_store_results(
+            selected,
+            days=args.days,
+            limit_campaigns=(args.limit_campaigns or None),
+            max_workers=args.max_workers,
+        )
+        output_results = results if args.include_details else compact_store_results(results)
         flagged = [
             {
                 'store_name': item.get('store_name'),
                 'store_code': item.get('store_code'),
                 'flags': item.get('flags', []),
             }
-            for item in results if item.get('flags')
+            for item in output_results if item.get('flags')
         ]
         print_json({
             'days': args.days,
             'store_filter': store_filter,
+            'max_workers': args.max_workers,
+            'include_details': bool(args.include_details),
             'store_count': len(selected),
             'flagged_stores': flagged,
-            'results': results,
+            'results': output_results,
         })
     except OzonConfigError as exc:
         cli_error(exc)

@@ -4,8 +4,16 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from ozon_lib import OzonConfigError, inspect_config, require_positive_int, select_stores, store_matches_filter
+from ozon_lib import (
+    OzonConfigError,
+    fetch_fbs_postings,
+    inspect_config,
+    require_positive_int,
+    select_stores,
+    store_matches_filter,
+)
 
 
 def build_store(
@@ -75,6 +83,37 @@ class OzonLibTests(unittest.TestCase):
         self.assertEqual(summary['enabled_store_count'], 2)
         self.assertEqual(summary['seller_ready_count'], 2)
         self.assertEqual(summary['performance_ready_count'], 2)
+
+    def test_fetch_fbs_postings_omits_empty_status_filter(self) -> None:
+        captured = {}
+
+        def fake_request_json(*args, **kwargs):
+            captured['json_body'] = kwargs.get('json_body')
+            return {'result': {'postings': []}}
+
+        with patch('ozon_lib.seller_headers', return_value={}):
+            with patch('ozon_lib.request_json', side_effect=fake_request_json):
+                fetch_fbs_postings({'store_name': 'Test'}, since='2026-04-01T00:00:00Z', to='2026-04-02T00:00:00Z')
+
+        self.assertNotIn('status', captured['json_body']['filter'])
+
+    def test_fetch_fbs_postings_normalizes_status_filter(self) -> None:
+        captured = {}
+
+        def fake_request_json(*args, **kwargs):
+            captured['json_body'] = kwargs.get('json_body')
+            return {'result': {'postings': []}}
+
+        with patch('ozon_lib.seller_headers', return_value={}):
+            with patch('ozon_lib.request_json', side_effect=fake_request_json):
+                fetch_fbs_postings(
+                    {'store_name': 'Test'},
+                    since='2026-04-01T00:00:00Z',
+                    to='2026-04-02T00:00:00Z',
+                    statuses=['', 'awaiting_packaging', '  '],
+                )
+
+        self.assertEqual(captured['json_body']['filter']['status'], ['awaiting_packaging'])
 
 
 if __name__ == '__main__':

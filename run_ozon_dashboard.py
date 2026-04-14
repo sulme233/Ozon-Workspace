@@ -11,7 +11,9 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from ozon_lib import OzonConfigError, cli_error, load_config, print_json, require_non_negative_int, require_positive_int, select_stores
-from run_ozon_daily_pipeline import merge_store_result
+from ozon_api_catalog import get_ozon_api_catalog
+from ozon_db import DEFAULT_DB_PATH, ensure_db, get_latest_snapshot, list_snapshots, list_store_trends, save_snapshot
+from run_ozon_daily_pipeline import compact_store_results, merge_store_results
 
 
 WORKSPACE = Path(__file__).resolve().parent
@@ -27,6 +29,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--days', type=int, default=7, help='Rolling day window')
     parser.add_argument('--store', type=str, default='', help='Filter by store name or store code')
     parser.add_argument('--limit-campaigns', type=int, default=0, help='Limit campaigns per store, 0 means no limit')
+    parser.add_argument('--max-workers', type=int, default=4, help='Store-level parallel workers')
+    parser.add_argument('--include-details', action='store_true', help='Include full module details in dashboard data')
+    parser.add_argument('--no-history', action='store_true', help='Do not write dashboard history snapshot')
+    parser.add_argument('--db-path', type=str, default=str(DEFAULT_DB_PATH), help='SQLite path for dashboard snapshots')
+    parser.add_argument('--no-db', action='store_true', help='Do not persist snapshots into SQLite')
     parser.add_argument('--serve', action='store_true', help='Serve dashboard locally and enable in-page refresh')
     parser.add_argument('--host', type=str, default='127.0.0.1', help='Dashboard host')
     parser.add_argument('--port', type=int, default=8765, help='Dashboard port')
@@ -65,23 +72,38 @@ def build_summary(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def collect_dashboard_payload(days: int, store_filter: str = '', limit_campaigns: int | None = None) -> Dict[str, Any]:
+def collect_dashboard_payload(
+    days: int,
+    store_filter: str = '',
+    limit_campaigns: int | None = None,
+    max_workers: int = 4,
+    include_details: bool = False,
+) -> Dict[str, Any]:
     require_positive_int(days, field='days')
+    require_positive_int(max_workers, field='max_workers')
     config = load_config()
     selected = select_stores(config, store_filter)
-    results = [merge_store_result(store, days=days, limit_campaigns=limit_campaigns) for store in selected]
+    results = merge_store_results(
+        selected,
+        days=days,
+        limit_campaigns=limit_campaigns,
+        max_workers=max_workers,
+    )
+    output_results = results if include_details else compact_store_results(results)
     generated_at = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return {
         'days': days,
         'store_filter': store_filter,
+        'max_workers': max_workers,
+        'include_details': bool(include_details),
         'generated_at': generated_at,
         'refresh_info': {
             'generated_at': generated_at,
-            'store_count': len(results),
+            'store_count': len(output_results),
             'latest_json': str(LATEST_JSON_FILE),
         },
-        'summary': build_summary(results),
-        'results': results,
+        'summary': build_summary(output_results),
+        'results': output_results,
     }
 
 
@@ -145,6 +167,7 @@ def render_html(payload: Dict[str, Any]) -> str:
 
     <section class="overview-grid" id="overview-grid"></section>
     <section class="board-grid" id="attention-grid"></section>
+    <section class="board-grid" id="data-grid"></section>
 
     <section class="toolbar-card">
       <div class="toolbar-grid">
@@ -190,24 +213,67 @@ def render_html(payload: Dict[str, Any]) -> str:
 """.replace('__EMBEDDED__', embedded)
 
 
-def refresh_dashboard(days: int, store_filter: str = '', limit_campaigns: int | None = None) -> Dict[str, Any]:
-    payload = collect_dashboard_payload(days=days, store_filter=store_filter, limit_campaigns=limit_campaigns)
-    files = write_dashboard_files(payload)
+def refresh_dashboard(
+    days: int,
+    store_filter: str = '',
+    limit_campaigns: int | None = None,
+    max_workers: int = 4,
+    include_details: bool = False,
+    keep_history: bool = True,
+    write_db: bool = True,
+    db_path: str = str(DEFAULT_DB_PATH),
+) -> Dict[str, Any]:
+    payload = collect_dashboard_payload(
+        days=days,
+        store_filter=store_filter,
+        limit_campaigns=limit_campaigns,
+        max_workers=max_workers,
+        include_details=include_details,
+    )
+    files = write_dashboard_files(payload, keep_history=keep_history)
+    snapshot_id: int | None = None
+    resolved_db_path = db_path
+    if write_db:
+        resolved_db_path = ensure_db(db_path)
+        snapshot_id = save_snapshot(payload, db_path=resolved_db_path)
     return {
         'status': 'ok',
         'output': files['html'],
         'latest_json': files['latest_json'],
         'history_json': files['history_json'],
         'store_count': len(payload.get('results', [])),
+        'max_workers': max_workers,
+        'include_details': bool(include_details),
+        'keep_history': bool(keep_history),
+        'write_db': bool(write_db),
+        'db_path': resolved_db_path,
+        'snapshot_id': snapshot_id,
         'generated_at': payload.get('generated_at'),
     }
 
 
-def serve_dashboard(host: str, port: int, days: int, store_filter: str = '', limit_campaigns: int | None = None) -> None:
+def serve_dashboard(
+    host: str,
+    port: int,
+    days: int,
+    store_filter: str = '',
+    limit_campaigns: int | None = None,
+    max_workers: int = 4,
+    include_details: bool = False,
+    keep_history: bool = True,
+    write_db: bool = True,
+    db_path: str = str(DEFAULT_DB_PATH),
+) -> None:
+    resolved_db_path = ensure_db(db_path)
     refresh_state: Dict[str, Any] = {
         'days': days,
         'store_filter': store_filter,
         'limit_campaigns': limit_campaigns,
+        'max_workers': max_workers,
+        'include_details': include_details,
+        'keep_history': keep_history,
+        'write_db': write_db,
+        'db_path': resolved_db_path,
         'refresh_lock': threading.Lock(),
     }
 
@@ -215,10 +281,94 @@ def serve_dashboard(host: str, port: int, days: int, store_filter: str = '', lim
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             super().__init__(*args, directory=str(DASHBOARD_DIR), **kwargs)
 
+        def _send_json(self, status: int, payload: Dict[str, Any]) -> None:
+            body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+            self.send_response(status)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        @staticmethod
+        def _query_int(query: Dict[str, List[str]], key: str, default: int, minimum: int, maximum: int) -> int:
+            raw = (query.get(key) or [str(default)])[0]
+            try:
+                value = int(raw)
+            except Exception:
+                value = default
+            return min(max(value, minimum), maximum)
+
+        @staticmethod
+        def _query_bool(query: Dict[str, List[str]], key: str, default: bool = False) -> bool:
+            raw = (query.get(key) or ['1' if default else '0'])[0].strip().lower()
+            return raw in {'1', 'true', 'yes', 'y', 'on'}
+
+        def do_GET(self) -> None:
+            parsed = urllib.parse.urlparse(self.path)
+            query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+
+            if not parsed.path.startswith('/api/'):
+                super().do_GET()
+                return
+
+            try:
+                if parsed.path == '/api/health':
+                    self._send_json(
+                        200,
+                        {
+                            'status': 'ok',
+                            'db_path': refresh_state['db_path'],
+                            'write_db': bool(refresh_state['write_db']),
+                        },
+                    )
+                    return
+
+                if parsed.path == '/api/snapshots':
+                    limit = self._query_int(query, 'limit', default=20, minimum=1, maximum=200)
+                    snapshots = list_snapshots(limit=limit, db_path=refresh_state['db_path'])
+                    self._send_json(200, {'status': 'ok', 'snapshots': snapshots})
+                    return
+
+                if parsed.path == '/api/snapshots/latest':
+                    include_payload = self._query_bool(query, 'include_payload', default=False)
+                    snapshot = get_latest_snapshot(
+                        include_payload=include_payload,
+                        db_path=refresh_state['db_path'],
+                    )
+                    self._send_json(200, {'status': 'ok', 'snapshot': snapshot})
+                    return
+
+                if parsed.path == '/api/stores/trend':
+                    store_code = (query.get('store_code') or [''])[0].strip()
+                    if not store_code:
+                        self._send_json(400, {'status': 'error', 'error': 'store_code is required'})
+                        return
+                    limit = self._query_int(query, 'limit', default=30, minimum=1, maximum=365)
+                    points = list_store_trends(store_code, limit=limit, db_path=refresh_state['db_path'])
+                    self._send_json(
+                        200,
+                        {
+                            'status': 'ok',
+                            'store_code': store_code,
+                            'points': points,
+                        },
+                    )
+                    return
+
+                if parsed.path == '/api/ozon-api/catalog':
+                    group = (query.get('group') or ['all'])[0]
+                    catalog = get_ozon_api_catalog(group=group)
+                    self._send_json(200, {'status': 'ok', 'catalog': catalog})
+                    return
+
+                self._send_json(404, {'status': 'error', 'error': f'Unknown API path: {parsed.path}'})
+            except Exception as exc:
+                self._send_json(500, {'status': 'error', 'error': str(exc)})
+
         def do_POST(self) -> None:
             parsed = urllib.parse.urlparse(self.path)
             if parsed.path != '/api/refresh':
-                self.send_error(404, 'Not Found')
+                self._send_json(404, {'status': 'error', 'error': f'Unknown API path: {parsed.path}'})
                 return
 
             with refresh_state['refresh_lock']:
@@ -227,17 +377,15 @@ def serve_dashboard(host: str, port: int, days: int, store_filter: str = '', lim
                         days=refresh_state['days'],
                         store_filter=refresh_state['store_filter'],
                         limit_campaigns=refresh_state['limit_campaigns'],
+                        max_workers=refresh_state['max_workers'],
+                        include_details=refresh_state['include_details'],
+                        keep_history=refresh_state['keep_history'],
+                        write_db=refresh_state['write_db'],
+                        db_path=refresh_state['db_path'],
                     )
-                    body = json.dumps(result, ensure_ascii=False).encode('utf-8')
-                    self.send_response(200)
+                    self._send_json(200, result)
                 except Exception as exc:
-                    body = json.dumps({'status': 'error', 'error': str(exc)}, ensure_ascii=False).encode('utf-8')
-                    self.send_response(500)
-
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+                    self._send_json(500, {'status': 'error', 'error': str(exc)})
 
         def log_message(self, format: str, *args: Any) -> None:
             return
@@ -250,6 +398,11 @@ def serve_dashboard(host: str, port: int, days: int, store_filter: str = '', lim
             'url': f'http://{host}:{port}/index.html',
             'days': days,
             'store_filter': store_filter,
+            'max_workers': max_workers,
+            'include_details': bool(include_details),
+            'keep_history': bool(keep_history),
+            'write_db': bool(write_db),
+            'db_path': resolved_db_path,
         })
         httpd.serve_forever()
 
@@ -259,13 +412,37 @@ def main() -> None:
         args = build_parser().parse_args()
         require_positive_int(args.days, field='days')
         require_non_negative_int(args.limit_campaigns, field='limit_campaigns')
+        require_positive_int(args.max_workers, field='max_workers')
         store_filter = (args.store or '').strip()
         limit_campaigns = args.limit_campaigns or None
+        keep_history = not args.no_history
+        write_db = not args.no_db
+        db_path = str(Path(args.db_path).expanduser())
         if args.serve:
-            serve_dashboard(args.host, args.port, days=args.days, store_filter=store_filter, limit_campaigns=limit_campaigns)
+            serve_dashboard(
+                args.host,
+                args.port,
+                days=args.days,
+                store_filter=store_filter,
+                limit_campaigns=limit_campaigns,
+                max_workers=args.max_workers,
+                include_details=args.include_details,
+                keep_history=keep_history,
+                write_db=write_db,
+                db_path=db_path,
+            )
             return
 
-        result = refresh_dashboard(days=args.days, store_filter=store_filter, limit_campaigns=limit_campaigns)
+        result = refresh_dashboard(
+            days=args.days,
+            store_filter=store_filter,
+            limit_campaigns=limit_campaigns,
+            max_workers=args.max_workers,
+            include_details=args.include_details,
+            keep_history=keep_history,
+            write_db=write_db,
+            db_path=db_path,
+        )
         print_json(result)
     except OzonConfigError as exc:
         cli_error(exc)

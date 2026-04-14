@@ -5,10 +5,12 @@ import json
 from typing import Any, Dict, List
 
 from ozon_lib import (
+    OzonApiError,
     OzonConfigError,
     cli_error,
     fetch_fbs_postings,
     fetch_fbs_unfulfilled_postings,
+    get_store_identity,
     load_config,
     print_json,
     require_positive_int,
@@ -29,7 +31,13 @@ def summarize_statuses(postings: List[Dict[str, Any]]) -> Dict[str, int]:
 def analyze_store_orders(store: Dict[str, Any], days: int = 7) -> Dict[str, Any]:
     since, to = utc_day_range(days=days)
     recent = fetch_fbs_postings(store, since=since, to=to, limit=200)
-    unfulfilled = fetch_fbs_unfulfilled_postings(store, limit=200)
+    warnings: List[str] = []
+    try:
+        unfulfilled = fetch_fbs_unfulfilled_postings(store, limit=200)
+    except OzonApiError as exc:
+        # Some stores reject unfulfilled query windows; keep recent postings result.
+        warnings.append(str(exc))
+        unfulfilled = []
 
     status_counts = summarize_statuses(recent)
     preview = []
@@ -71,10 +79,11 @@ def analyze_store_orders(store: Dict[str, Any], days: int = 7) -> Dict[str, Any]
     }
     return {
         **get_store_identity(store),
-        'status': 'ok',
+        'status': 'partial' if warnings else 'ok',
         'days': days,
         'summary': summary,
         'postings_preview': preview,
+        'warnings': warnings,
     }
 
 

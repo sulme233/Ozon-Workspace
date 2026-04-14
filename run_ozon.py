@@ -20,6 +20,8 @@ PIPELINES = {
     'daily': 'run_ozon_daily_pipeline.py',
     'dashboard': 'run_ozon_dashboard.py',
     'refresh': 'run_ozon_dashboard.py',
+    'smoke': 'scripts/smoke_test_interfaces.py',
+    'api-smoke': 'scripts/smoke_test_interfaces.py',
 }
 
 

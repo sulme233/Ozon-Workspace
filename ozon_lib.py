@@ -158,9 +158,9 @@ def today_range(days: int = 7) -> Tuple[dt.date, dt.date]:
 
 def utc_day_range(days: int = 7) -> Tuple[str, str]:
     require_positive_int(days, field='days')
-    end = dt.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    end = dt.datetime.now(dt.UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     start = end - dt.timedelta(days=days)
-    return start.isoformat() + 'Z', end.isoformat() + 'Z'
+    return start.strftime('%Y-%m-%dT%H:%M:%SZ'), end.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 def parse_csv_semicolon(text: str) -> List[Dict[str, str]]:
@@ -392,13 +392,16 @@ def fetch_fbs_postings(
     timeout: int = 60,
 ) -> List[Dict[str, Any]]:
     require_positive_int(limit, field='limit')
+    status_values = [str(status).strip() for status in (statuses or []) if str(status).strip()]
+    filter_body: Dict[str, Any] = {
+        'since': since,
+        'to': to,
+    }
+    if status_values:
+        filter_body['status'] = status_values
     body: Dict[str, Any] = {
         'dir': 'DESC',
-        'filter': {
-            'since': since,
-            'to': to,
-            'status': statuses or [],
-        },
+        'filter': filter_body,
         'limit': limit,
         'offset': 0,
         'with': {

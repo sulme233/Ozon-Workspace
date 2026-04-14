@@ -21,6 +21,8 @@
 python run_ozon.py check-config
 python run_ozon.py list-stores
 python run_ozon.py daily --days 7
+python run_ozon.py daily --days 7 --max-workers 4
+python run_ozon.py daily --days 7 --include-details
 python run_ozon.py ads --days 7 --store ozon_a
 python run_ozon.py sales --days 14
 python run_ozon.py orders --days 7
@@ -28,6 +30,9 @@ python run_ozon.py pricing --store ozon_g
 python run_ozon.py sku-risk --reason 无可用库存 --sort-by free_stock --ascending
 python run_ozon.py logistics --store 二店
 python run_ozon.py dashboard --days 7
+python run_ozon.py dashboard --days 7 --max-workers 4
+python run_ozon.py dashboard --days 7 --include-details
+python run_ozon.py dashboard --days 7 --no-history
 python run_ozon.py refresh --days 7
 ```
 
@@ -97,3 +102,46 @@ pip install -r requirements.txt
 python -m unittest discover -s tests -p "test_*.py"
 python run_ozon.py check-config
 ```
+
+## Backend API & SQLite
+
+- SQLite default path: `dashboard/data/ozon_metrics.db`
+- Disable DB writes for one run: `--no-db`
+- Override DB path: `--db-path C:/path/to/ozon_metrics.db`
+- Skip history JSON snapshot files: `--no-history`
+
+Serve mode with API:
+
+```bash
+python run_ozon_dashboard.py --serve --days 7 --max-workers 4
+```
+
+Available API endpoints:
+
+- `GET /api/health`
+- `GET /api/snapshots?limit=20`
+- `GET /api/snapshots/latest?include_payload=0`
+- `GET /api/stores/trend?store_code=ozon_a&limit=30`
+- `GET /api/ozon-api/catalog?group=all`
+- `POST /api/refresh`
+
+## API Smoke Test
+
+Use the unified command to validate local dashboard APIs end-to-end:
+
+```bash
+python run_ozon.py smoke --days 7 --max-workers 2
+```
+
+Optional: include read-only probes to key Ozon APIs for one store:
+
+```bash
+python run_ozon.py smoke --days 7 --probe-ozon --ozon-store ozon_a
+```
+
+Notes:
+
+- `smoke` starts `run_ozon_dashboard.py --serve` internally, probes APIs, then stops the server automatically.
+- Use `--no-history` and/or `--no-db` to avoid writing runtime artifacts during validation.
+- Use `--skip-refresh` for quick API availability checks without triggering a full data refresh.
+- Use `--strict-refresh` when you want refresh timeout to fail the smoke run.

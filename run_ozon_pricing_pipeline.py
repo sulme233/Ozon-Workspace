@@ -8,6 +8,7 @@ from ozon_lib import (
     OzonConfigError,
     cli_error,
     fetch_product_prices,
+    get_store_identity,
     load_config,
     print_json,
     ru_num,

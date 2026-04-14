@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 from typing import Any, Dict, List
 
 from ozon_lib import (
+    OzonApiError,
     OzonConfigError,
     cli_error,
     get_perf_token,
@@ -106,14 +108,34 @@ def analyze_store_ads(store: Dict[str, Any], days: int = 7, limit_campaigns: int
         }
 
     query = [('campaignIds', cid) for cid in campaign_ids] + [('dateFrom', start.isoformat()), ('dateTo', end.isoformat())]
-    csv_text = request_csv(
-        'GET',
-        'https://api-performance.ozon.ru/api/client/statistics/campaign/product',
-        headers=headers,
-        params=query,
-        timeout=60,
-        error_context='Failed to fetch product campaign statistics',
-    )
+    try:
+        csv_text = request_csv(
+            'GET',
+            'https://api-performance.ozon.ru/api/client/statistics/campaign/product',
+            headers=headers,
+            params=query,
+            timeout=60,
+            error_context='Failed to fetch product campaign statistics',
+        )
+    except OzonApiError as exc:
+        # Some accounts reject same-day ranges as future intervals; retry on yesterday.
+        if 'future' not in str(exc).lower() and 'будущ' not in str(exc).lower():
+            raise
+        fallback_end = start - dt.timedelta(days=1)
+        fallback_start = fallback_end - dt.timedelta(days=max(days - 1, 0))
+        query = [('campaignIds', cid) for cid in campaign_ids] + [
+            ('dateFrom', fallback_start.isoformat()),
+            ('dateTo', fallback_end.isoformat()),
+        ]
+        csv_text = request_csv(
+            'GET',
+            'https://api-performance.ozon.ru/api/client/statistics/campaign/product',
+            headers=headers,
+            params=query,
+            timeout=60,
+            error_context='Failed to fetch product campaign statistics',
+        )
+        start, end = fallback_start, fallback_end
     rows = parse_csv_semicolon(csv_text)
     objects_map = fetch_campaign_objects(headers, campaign_ids)
 

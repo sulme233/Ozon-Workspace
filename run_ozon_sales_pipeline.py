@@ -8,6 +8,7 @@ from ozon_lib import (
     OzonConfigError,
     cli_error,
     fetch_finance_transactions,
+    get_store_identity,
     load_config,
     print_json,
     require_positive_int,
