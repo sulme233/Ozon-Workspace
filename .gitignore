@@ -1,0 +1,24 @@
+# Python cache/build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE/editor
+.idea/
+.vscode/
+
+# Ozon runtime artifacts
+dashboard/data/history/
+dashboard/data/*.db
+
+# OS junk
+.DS_Store
+Thumbs.db
