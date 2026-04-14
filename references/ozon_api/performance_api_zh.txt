@@ -1,0 +1,3410 @@
+Performance
+Api
+输入Client ID 和 API 密钥
+
+
+总描述
+性能API方法
+总描述
+介绍
+如何获取API-密钥
+请求限制
+更新
+性能API方法
+活动和推广对象
+广告活动列表
+get
+/api/client/campaign
+活动中的推广对象列表
+get
+/api/client/campaign/{campaignId}/objects
+推广工具的投注限额
+get
+/api/client/limits/list
+按 SKU 获取商品最低出价
+post
+/api/min/sku
+带有积分的商品列表
+get
+/api/client/products_with_bonuses
+统计数据
+按点击付费和特别投放
+在付费点击和特别广告中出售的商品
+按订单付款
+外部流量分析
+Ozon Performance API 文档 (2.0)
+在文件中描述了Ozon Performance API — 用于与广告管理面板进行交换的接口方法 系统卖家和Ozon之间的信息。
+
+关于使用API的工作问题，请通过个人中心联系客服。
+
+介绍
+要使用Ozon广告活动报告API，请在您的个人中心获取 client_id 和 client_secret：
+
+在个人中心进入页面 设置 → API-密钥.
+如果需要，请创建服务账号：点击 创建新账号。
+点击服务账号名称。
+点击 添加新密钥。
+用于使用API：
+
+使用 client_id 和 client_secret 在授权服务中获取授权令牌。
+使用授权令牌执行请求。如果令牌已过期，请获取新的令牌。
+如何获取API-密钥
+要获取授权令牌，请发送请求：
+
+POST /api/client/token HTTP/1.1
+Host: https://api-performance.ozon.ru
+Content-Type: application/json
+Accept: application/json
+
+{
+  "client_id":"XYZ@advertising.performance.ozon.ru", 
+  "client_secret":"b1u5XXDQW3wEqQ7dG...ancMyuhQtMNBI", 
+  "grant_type":"client_credentials"
+}
+服务会返回带有有效期秒数的令牌：
+
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4",
+  "expires_in": 1800,
+  "token_type": "Bearer"
+}
+请求限制
+每天的请求总限额为100,000。
+
+在报告生成的开始检查上传统计数据的限制。
+
+限额适用于来自统计部分的报告。
+
+一条广告活动 = 一条导出。
+
+如果请求中有多个广告活动，这将被视为多个导出。
+
+每天的导出数量限制按以下公式计算：活跃广告数量 × 240 — 但不超过以下表格中的值。
+
+下载限制：
+
+限制	限额的含义
+导出文件的天数限制	62
+报告中的广告数量限制	10
+账户同时导出数量的限制	1
+每天账户的下载数量限制	2000
+组织同时下发数量的限制	5
+在组织范围内的24小时内的下载数量限制	2000
+更新
+2026年2月18日
+方法	变更
+POST /api/client/statistics/phrases	已新增获取搜索查询报告的接口。
+2026年1月21日
+方法	变更
+POST /api/client/statistics/video
+POST /api/client/statistics/attribution
+GET /api/client/statistics/campaign/media
+GET /api/client/statistics/expense
+GET /api/client/statistics/daily
+GET /api/client/statistics/campaign/product
+POST /api/client/statistic/orders/generate
+POST /api/client/statistic/products/generate
+POST /api/client/statistics	已更新方法描述中的报告内容。
+2026年1月15日
+方法	变更
+GET /api/client/campaign
+POST /api/client/campaign/cpc/v2/product
+POST /api/client/campaign/{campaignId}/activate
+POST /api/client/campaign/{campaignId}/deactivate
+PATCH /api/client/campaign/{campaignId}	更新了方法描述。
+POST /api/client/campaign/cpc/v2/product
+PATCH /api/client/campaign/{campaignId}	已从方法请求中移除参数 autoIncreasePercent。
+GET /api/client/campaign
+POST /api/client/campaign/{campaignId}/activate
+POST /api/client/campaign/{campaignId}/deactivate	已从方法响应中移除参数 autoIncrease。
+POST /api/client/campaign/cpc/v2/product	移除了方法请求中参数 TAKEOVER 的值 productAutopilotStrategy。
+2025年11月18日
+方法	变更
+GET /api/client/products_with_bonuses	新增了获取带有积分商品列表的方式。
+2025年11月10日
+方法	变更
+GET /api/client/statistics/campaign/product	已更新方法的描述。
+2025年10月31日
+方法	变更
+GET /api/client/campaign	在方法的响应中，为参数 list.productAutopilotStrategy 添加了值 TOP_PROMOTION。
+POST /api/client/campaign/{campaignId}/activate
+POST /api/client/campaign/{campaignId}/deactivate	在方法的响应中，为参数 productAutopilotStrategy 添加了值 TOP_PROMOTION。
+POST /api/client/campaign/cpc/v2/product	在方法的请求中，为参数 productAutopilotStrategy 添加了值 TOP_PROMOTION。
+POST /api/client/statistic/products/generate	已更新方法的描述。
+2025年10月23日
+方法	变更
+GET /api/client/campaign	自动增加参数list.autoIncrease即将废弃，我们将于2025年10月29日 停用该参数。
+POST /api/client/campaign/cpc/v2/product
+PATCH /api/client/campaign/{campaignId}	自动增加参数autoIncreasePercent即将废弃，我们将于2025年10月29日 停用该参数。
+POST /api/client/campaign/{campaignId}/activate
+POST /api/client/campaign/{campaignId}/deactivate	自动增加参数autoIncrease即将废弃，我们将于2025年10月29日 停用该参数。
+2025年10月17日
+方法	变更
+POST /api/client/campaign/cpc/v2/product	已更新 placement 和 productAutopilotStrategy 参数在方法请求中的描述。
+POST /api/client/campaign/{campaignId}/activate
+POST /api/client/campaign/{campaignId}/deactivate	已更新 paymentType、 advObjectType,、placement 和 productAutopilotStrategy 参数在方法响应中的描述。
+POST /external/api/dynamic_budget	已更新 createCampaign.autopilotStrategy,、createCampaign.placement 和 updateCampaign.autopilotStrategy 参数在方法请求中的描述。
+GET /api/client/campaign	已更新 advObjectType 参数在方法请求中的描述。
+已更新 list.advObjectType、list.placement 和 list.productAutopilotStrategy 参数在方法响应中的描述。
+GET /api/client/campaign/{campaignId}/objects
+POST /api/client/statistics	已更新方法的描述。
+GET /api/client/limits/list	已更新方法的描述。
+已更新 limits.objectType 和 limit.placement 参数在方法响应中的描述。
+POST /api/client/min/sku	已更新 paymentType 参数在方法请求中的描述。
+GET /api/client/statistics/campaign/product	已更改方法名称。
+—	已将 模板和登上顶端 板块名称更改为 按点击付费和特别投放。
+已将 模板和登上顶端中的商品 模块名称更改为 在付费点击和特别广告中出售的商品。
+2025年8月19日
+方法	变更
+POST /external/api/dynamic_budget	方法即将过时，并将于2025年9月1日停用。
+2025年7月24日
+方法	变更
+GET /api/client/limits/list	已更新方式响应中limits.objectType参数的描述。
+已在方式回复中的limits.placement参数中添加了CAMPAIGN_PLACEMENT_OVERTOP值。
+更新了方法描述。
+POST /api/client/campaign/cpc/v2/product	已更新 productAutopilotStrategy参数中的TARGET_BIDS值。
+POST /api/client/min/sku	已更新方式请求中paymentType参数的描述。
+GET /api/client/campaign	已更新方式请求中advObjectType参数的描述。
+已更新方式响应中list.advObjectType参数的描述。
+已在方式响应中的list.placement参数中添加PLACEMENT_OVERTOP值。
+POST /api/client/campaign/{campaignId}/activate
+POST /api/client/campaign/{campaignId}/deactivate	已更新方式响应中advObjectType参数的描述。
+POST /api/client/campaign/search_promo/v2/products	已更新方式响应中的products.isSearchPromoAvailable和products.searchPromoStatus参数描述。
+已更改方式名称。
+GET /api/client/statistics/{UUID}	已更新方式响应中kind参数的描述。
+GET /api/client/statistics/list
+/api/client/statistics/externallist	已更新方式响应中items.meta.kind参数的描述。
+GET /api/client/campaign/{campaignId}/objects
+POST /api/client/statistics	已更改方式描述。
+POST /api/client/statistic/orders/generate
+POST /api/client/statistic/products/generate
+POST /api/client/campaign/search_promo/v2/bids/delete
+POST /api/client/search_promo/product/disable
+POST /api/client/search_promo/product/enable	已更改方式名称。
+—	已将搜索结果推广部分的名称更改为按订单付款。
+2025年7月17日
+方法	变更
+POST /external/api/dynamic_budget	新了方法响应中skuPrice参数的描述。
+2025年6月10日
+方法	变更
+GET /api/client/campaign	在方法请求中添加了参数page和pageSize。
+2025年5月14日
+方法	变更
+POST /api/min/sku	新增用于按 SKU 获取商品最低出价的新方法。
+2025年4月22日
+方法	变更
+GET /api/client/campaign/{campaignId}/brand_shelf/{brandShelfId}	已从文档中删除方法。
+POST /api/client/campaign/cpc/v2/product
+PATCH /api/client/campaign/{campaignId}	添加了参数 autoIncreasePercent 到方法请求中 。
+GET /api/client/campaign
+POST /api/client/campaign/{campaignId}/activate
+POST /api/client/campaign/{campaignId}/deactivate	添加了以下参数：autoIncrease.autoIncreasePercent，autoIncrease.isAutoIncreased，autoIncrease.autoIncreasedBudget，autoIncrease.recommendedAutoIncreasePercent 到方法响应中 。
+2025年4月4日
+方法	变更
+GET /api/client/statistics/report	更新了方法描述。
+修改了响应头和响应体的结构。
+2025年4月1日
+方法	变更
+GET /api/client/statistics/campaign/product	更新了方法描述。
+2025年1月20日
+方法	变更
+POST /external/api/dynamic_budget	添加了用于计算广告活动最低预算的方法。
+2025年1月9日
+方法	变更
+POST /api/client/campaign/cpc/v2/product	更新了请求方法中的参数 productAutopilotStrategy 描述。
+PATCH /api/client/campaign/{campaignId}	已从请求方法中删除参数 autopilot.skuAddMode。
+2024年11月28日
+方法	变更
+GET /api/client/statistics/campaign/product	在报告中添加了周预算。
+2024年10月31日
+方法	变更
+POST /api/client/campaign/cpc/v2/product	已从请求方法中删除参数 productCampaignMode。
+GET /api/client/statistics/campaign/media
+GET /api/client/statistics/campaign/product	更新了方法描述。
+2024年10月11日
+方法	变更
+GET /api/client/statistics/externallist	添加了通过API生成报告列表的方法。
+GET /api/client/statistics/list	更新了方法描述。
+GET /api/client/campaign	更新了请求中的参数 state 和方法响应中的参数 list.state 的值 CAMPAIGN_STATE_STOPPED。
+POST /api/client/campaign/{campaignId}/activate
+POST /api/client/campaign/{campaignId}/deactivate	更新了方法响应中的 CAMPAIGN_STATE_STOPPED 参数 state 的值。
+2024年9月26日
+方法	变更
+所有的方式	从2025年1月15日起，主机 performance.ozon.ru 不再工作。请转到新主机 api-performance.ozon.ru。
+2024年9月3日
+方法	变更
+GET /campaign/{campaignId}/products	方法过时了，已从文档中删除。请使用 GET /campaign/{campaignId}/v2/products.
+POST /campaign/{campaignId}/search_promo/products	方法过时了，已从文档中删除。请使用POST /campaign/search_promo/v2/products。
+POST /campaign/{campaignId}/search_promo/bids/set	方法过时了，已从文档中删除。请使用POST /campaign/search_promo/v2/bids/set。
+POST /campaign/cpc/product	方法过时了，已从文档中删除。请使用POST /campaign/cpc/v2/product。
+POST /campaign/{campaignId}/search_promo/bids/delete	方法过时了，已从文档中删除。请使用POST /campaign/search_promo/v2/bids/delete。
+POST /campaign/cpm/v2/product
+PATCH /campaign/{campaignId}/brand_shelf/{brandShelfId}	方法过时了，已从文件中删除。
+POST /campaign/search_promo/v2/bids/delete
+POST /search_promo/product/enable
+POST /search_promo/product/disable
+POST /campaign/search_promo/v2/bids/delete	在描述方法中添加了，一个请求中可以传递的最大商品数量为1000。
+2024年8月29日
+方法	变更
+POST /campaign/cpc/v2/product	更新了请求方法中的参数 productAutopilotStrategy 描述。
+POST /campaign/{campaignId}/activate
+POST /campaign/{campaignId}/deactivate	在响应中更新了方法描述：advObjectType，placement 和 productAutopilotStrategy。
+GET /campaign	更新了请求方法中的参数 advObjectType 描述。
+GET /campaign/{campaignId}/objects	更新了方法描述。
+GET /limits/list	更新了响应中的方法和参数描述： limits.objectType 和 limits.placement。
+GET /statistics/campaign/product
+GET /statistics/campaign/media	更新了请求示例。
+模版和进入榜单
+在模版中商品和榜单	更新了部分名称。
+2024年8月15日
+方法	变更
+POST /campaign/{campaignId}/products
+PUT /campaign/{campaignId}/products
+GET /campaign/{campaignId}/v2/products
+POST /campaign/search_promo/v2/products
+POST /search_promo/bids/recommendation
+POST /campaign/search_promo/v2/bids/set	在参数 bid、bids 和 SKU* 中明确指出，标价仅适用于订单或点击。
+2024年8月7日
+方法	变更
+POST /campaign/{campaignId}/v2/activate
+POST /campaign/{campaignId}/v2/deactivate	方法未使用，已从文档中删除。请使用 POST /campaign/{campaignId}/activate 和 POST /campaign/{campaignId}/deactivate.
+POST /campaign/{campaignId}/activate
+POST /campaign/{campaignId}/deactivate	删除了方法过时的标记。
+POST /campaign/search_promo/v2/bids/set
+POST /search_promo/product/enable	更新了方法的响应参数。
+POST /campaign/{campaignId}/search_promo/bids/reset	方法过时了，已从文档中删除。
+2024年7月22日
+方法	变更
+POST /campaign/cpc/product
+POST /campaign/cpc/v2/product
+PATCH /campaign/{campaignId}	在方法请求中添加了参数 weeklyBudget。
+POST /campaign/{campaignId}/v2/activate
+POST /campaign/{campaignId}/activate
+GET /campaign	在方法响应中添加了参数 weeklyBudget。
+2024年7月3日
+方法	变更
+POST /campaign/cpm/product	方法过时了，已从文档中删除。
+POST /campaign/cpm/v2/product	标记了方法过时。
+POST /campaign/{campaignId}/v2/activate
+POST /campaign/{campaignId}/activate	更新了方法描述。
+2024年7月1日
+方法	变更
+GET_/campaign/{campaignId}/brand_shelf/{brandShelfId}
+PATCH_/campaign/{campaignId}/brand_shelf/{brandShelfId}	品牌货架不工作了，标记了方法过时。
+GET_/limits/list
+GET_/campaign/{campaignId}/objects
+POST_/statistics
+POST_/statistics/attribution	从描述中删除了品牌货架的提及。
+2024年5月23日
+方法	变更
+POST /campaign/cpm/v2/product
+POST /campaign/cpc/v2/product
+PATCH /campaign/{campaignId}	已从请求方法中删除参数 expenseStrategy。
+POST /campaign/cpc/v2/product	在请求方法中添加了参数 productAutopilotStrategy 的描述。
+GET /campaign	在方法响应中补充了参数 list.placement 的描述。
+POST /campaign/cpm/v2/product	在请求方法中添加了参数 placement 的描述。
+POST /campaign/{campaignId}/v2/activate
+POST /campaign/{campaignId}/v2/deactivate	在方法响应中添加了参数 productAutopilotStrategy 的描述。
+2024年4月26日
+方法	变更
+POST /campaign/search_promo/v2/products	在方法响应中添加了参数 products.isSearchPromoAvailable。
+2024年4月22日
+方法	变更
+POST /campaign/cpm/v2/product
+POST /campaign/cpc/v2/product	在请求方法中：
+• 删除了参数 autopilot ；
+• 修改了参数 productCampaignMode 的默认值。
+POST /statistic/orders/generate	添加了用于获取在搜索结果中的推广订单报告的方法。
+POST /statistic/products/generate	添加了获取搜索中推广商品报告的方法。
+2024年3月19日
+方法	变更
+GET /limits/list	添加了获取：
+• “搜索推广”、“模版”和“品牌货架”中的最低和最高投注的方法；
+• “搜索推广”和“模版”中的商品类别的最低投注。
+2024年3月5日
+方法	变更
+PUT /campaign/{campaignId}/products	更新了方法描述。
+POST /campaign/search_promo/v2/products	更新了请求中的参数 page 描述。
+—	在请求限制部分，提高了每24小时账户和组织内的导出数量限制到2000。
+2024年2月22日
+方法	变更
+GET /campaign/{campaignId}/products	标记了方法过时。请使用 GET /campaign/{campaignId}/v2/products.
+POST /campaign/cpm/product	标记了方法过时。
+POST /campaign/cpc/product	标记了方法过时。请使用 POST /campaign/cpc/v2/product。
+POST /campaign/{campaignId}/activate	标记了方法过时。请使用 POST /campaign/{campaignId}/v2/activate。
+POST /campaign/{campaignId}/deactivate	标记了方法过时。请使用 POST /campaign/{campaignId}/v2/deactivate。
+GET /campaign/{campaignId}/v2/products	添加了新的方法来获取活动商品列表。
+POST /campaign/cpm/v2/product	添加了一个新的方法来创建付费展示的广告活动。
+POST /campaign/cpc/v2/product	添加了一个新的方法来创建带点击付费的广告活动。
+POST /campaign/{campaignId}/v2/activate	添加了新的激活活动的方法。
+POST /campaign/{campaignId}/v2/deactivate	添加了新的关闭广告的方法。
+GET /campaign/{campaignId}/products/bids/competitive	在模版中添加了一个新的方法来获取商品的竞争性报价。
+2024年1月26日
+方法	变更
+POST /campaign/{campaignId}/search_promo/products
+POST /campaign/{campaignId}/search_promo/bids/set
+POST /campaign/{campaignId}/search_promo/bids/reset
+POST /campaign/{campaignId}/search_promo/bids/delete	标记了方法为过时的，使用新的方法来管理搜索结果的推广。
+POST /campaign/search_promo/v2/products	添加了从搜索结果中获取商品列表的方法。
+POST /search_promo/bids/recommendation	添加了获取推荐投注的方法，用于搜索中的推广商品。
+POST /campaign/search_promo/v2/bids/set	添加了用于在搜索结果中设置商品推广的方法。
+POST /search_promo/product/enable	添加了用于在搜索结果中推广商品的方法。
+POST /search_promo/product/disable	添加了用于关闭商品在搜索中的推广的方法。
+POST /campaign/search_promo/v2/bids/delete	添加了从搜索结果中删除商品的方法。
+2024年1月17日
+方法	变更
+POST /campaign/cpm/product
+POST /campaign/cpc/product	更新了方法描述。从方法请求中删除了参数 productCampaignMode。
+POST /campaign/{campaignId}/products	更新了方法描述。从请求方法中删除了参数 phrases、groupId 和 stopWords。
+PUT /campaign/{campaignId}/products	从请求方法中删除了参数 phrases、groupId 和 stopWords。
+GET /campaign/{campaignId}/products	从方法的响应中删除了参数 phrases、groupId 和 stopWords。
+GET /campaign/{campaignId}/objects
+POST /statistics/attribution
+POST /statistics
+POST /statistics/video	更新了方法描述。
+—	部分 投注限制 已过时，已从文件中删除。
+GET /campaign/available
+POST /campaign/{campaignId}/group
+GET /campaign/{campaignId}/group/{groupId}
+PUT /campaign/{campaignId}/group/{groupId}
+POST /statistics/phrases	方法过时了，已从文件中删除。
+PUT /campaign/{campaignId}/period
+PUT /campaign/{campaignId}/daily_budget	方法过时了，已从文档中删除。请使用 PATCH /campaign/{campaignId}.
+2023年12月21日
+方法	变更
+POST /statistics/
+POST /statistics/video
+POST /statistics/attribution
+GET /statistics/campaign/media
+GET /statistics/campaign/product
+GET /statistics/daily
+GET /statistics/expense	在描述中添加了关于JSON格式报告的信息。
+2023年10月20日
+方法	变更
+—	更新了部分标题： «商品广告活动» 在 模版 和 «商品在广告活动中» 在 商品模版。
+GET /campaign	更新了请求方法中的参数 advObjectType 描述。添加了方法响应中的参数 PaymentType。
+2023年4月10日
+方法	变更
+POST /statistics/phrases	从方法请求中删除了参数 groupBy。
+2022年11月3日
+方法	变更
+—	更新了竞价限制并为“商品和类目”中的广告添加了“点击”支付方式。
+POST /campaign/cpc/product	添加了创建付费点击广告活动的方法。
+POST /campaign/{campaignId}/products	在方法描述中添加了关于在付费点击广告活动中添加商品的建议。
+PUT /campaign/{campaignId}/daily_budget	从请求方法中删除了参数 fromDate 和 toDate。
+PUT /campaign/{campaignId}/period	从请求方法中删除了参数 dailyBudget。
+PATCH /campaign/{campaignId}	在方法请求中添加了参数 autopilot 来传递启用自动策略的广告活动信息。
+修改了参数 budget 的描述。
+POST /campaign/cpm/product	在方法请求中添加了参数 autopilot.skuAddMode 来启用自动将商品添加到活动中。
+方法请求中更新了参数 toDate 的描述。
+方法请求中添加了参数 budget。
+GET /campaign	在方法中添加了一个字段 autopilot.skuAddMode 来获取关于自动添加商品到活动的信息。
+2022年9月5日
+方法	变更
+GET /campaign
+POST /campaign/{campaignId}/activate
+POST /campaign/{campaignId}/deactivate	在方法响应中添加了字段，用于提供关于自动策略的信息 productAutopilotStrategy 和 autopilot。
+POST /campaign/cpm/product	添加了参数 productAutopilotStrategy 和 autopilot 来传递关于自动策略的信息到方法请求中。
+POST /campaign/{campaignId}/products
+PUT /campaign/{campaignId}/products	在方法描述中添加了在启用自动策略的广告活动中工作时的限制。
+2022年9月2日
+方法	变更
+GET /campaign/{campaignId}/products	添加了字段：
+• categories.bid — 类别的赌注，
+• categories.categoryId — 类别的标识符，
+• title — 商品名称。
+2022年8月30日
+方法	变更
+POST /statistics/video	添加了获取视频横幅广告展示统计的方法。
+2022年8月22日
+方法	变更
+GET /organisation/vendor_tag	添加了用于获取组织标志的方法，以便用于外部广告活动。
+2022年8月11日
+方法	变更
+GET /statistics/report	添加了方法响应中的错误UUID描述。
+2022年8月10日
+方法	变更
+GET /statistics/{UUID}
+GET /statistics/list	在方法的响应中添加了字段 kind 的值。
+2022年8月5日
+方法	变更
+GET /campaign/{campaignId}/group/{groupId}	添加了获取群组信息的方法。
+2022年7月18日
+方法	变更
+—	更新了在限制下注部分的最大推广搜索排名。
+2022年7月15日
+方法	变更
+POST /campaign/cpm/product	更新了请求中的参数 productCampaignMode 描述。
+POST /campaign/{campaignId}/products	更新了方法描述。
+2022年7月14日
+方法	变更
+POST /campaign/cpm/product	更新了方法描述。添加了参数 productCampaignMode 并更新了请求中的 placement 参数描述。
+POST /campaign/{campaignId}/products	更新了方法描述。更新了请求方法中的参数 bids.bid 描述。
+PUT /campaign/{campaignId}/products	更新了方法描述。
+GET /campaign	更新了请求中的参数 advObjectType 描述。 在方法响应中添加了 productCampaignMode 字段。
+POST /campaign/{campaignId}/group
+PUT /campaign/{campaignId}/group/{groupId}
+POST /statistics/phrases	更新了方法描述。
+GET /campaign/available	添加了获取可用广告活动模式的方法。
+2022年7月11日
+方法	变更
+—	添加了投注限制部分。
+2022年7月8日
+方法	变更
+GET /campaign/{campaignId}/brand_shelf/{brandShelfId}	在方法响应中添加了字段 targetDeepLink 和 bids.bidMicros。 在响应中明确了字段 image.format 的返回值。 更新了响应中的字段 bids.bid 和 searchBids.bid 的描述。
+PATCH /campaign/{campaignId}/brand_shelf/{brandShelfId}	从方法请求中删除了字段 searchBids.relevanceStatus。
+2022年7月7日
+方法	变更
+POST /vendors/statistics	添加了用于启动外部流量分析报告生成的方法。
+GET /vendors/statistics/list	添加了获取所有所需报告的外部流量分析方法。
+GET /vendors/statistics/{UUID}	添加了获取外部流量分析报告信息的方法。
+2022年7月5日
+方法	变更
+POST /campaign/{campaignId}/search_promo/products
+
+POST /campaign/{campaignId}/search_promo/bids/delete	更新了方法描述。
+2022年7月4日
+方法	变更
+POST /statistics
+POST /statistics/phrases
+POST /statistics/attribution	已更改请求参数中的最大报告期限 to 和 from。
+2022年6月30日
+方法	变更
+GET /statistics/{UUID}	在响应中添加了 kind 字段和示例方法。
+POST /statistics	在响应中添加了字段 vendor 和示例方法。
+2022年6月28日
+方法	变更
+POST /campaign/cpc/product	方法过时了，已从文档中删除。
+—	现在可以在卖家个人中心获取 client_id 和 client_secret。我们在文档中添加了说明。
+2022年6月27日
+方法	变更
+PUT /campaign/{campaignId}/daily_budget	已修正请求中的参数 dailyBudget 描述。
+2022年6月2日
+方法	变更
+—	添加了请求限制部分。
+2021年9月27日
+方法	变更
+—	添加了方法列表部分。
+—	将“开始工作”部分名称更改为“介绍”。
+将“获取令牌”部分名称更改为“如何获取API-密钥”。
+活动和推广对象
+广告活动列表
+get
+/api/client/campaign
+
+描述和范例控制台
+query Parameters
+campaignIds	
+Array of strings <uint64>
+需要输出信息的广告标识符列表。
+
+如果传递值，则回复将包含所指明的活动的信息 在字段 campaigns 中。如果字段为空，信息将传递给所有活动。
+
+advObjectType	
+string
+广告活动类型：
+
+SKU — 按点击付费；
+BANNER — 横幅广告活动；
+SEARCH_PROMO — 按订单付款。
+了解更多关于广告活动类型
+
+state	
+string
+Default: "CAMPAIGN_STATE_UNKNOWN"
+Enum: "CAMPAIGN_STATE_UNKNOWN" "CAMPAIGN_STATE_RUNNING" "CAMPAIGN_STATE_PLANNED" "CAMPAIGN_STATE_STOPPED" "CAMPAIGN_STATE_INACTIVE" "CAMPAIGN_STATE_ARCHIVED" "CAMPAIGN_STATE_MODERATION_DRAFT" "CAMPAIGN_STATE_MODERATION_IN_PROGRESS" "CAMPAIGN_STATE_MODERATION_FAILED" "CAMPAIGN_STATE_FINISHED"
+广告活动状态。
+
+可能的值：
+
+CAMPAIGN_STATE_RUNNING — 活跃的活动；
+CAMPAIGN_STATE_PLANNED — 计划中的活动，时间还没有到；
+CAMPAIGN_STATE_STOPPED — 由于预算不足而暂停的活动；
+CAMPAIGN_STATE_INACTIVE — 由于拥有者停止而停止的活动；
+CAMPAIGN_STATE_ARCHIVED — 归档的活动；
+CAMPAIGN_STATE_MODERATION_DRAFT — 已编辑的未发送到审核的活动；
+CAMPAIGN_STATE_MODERATION_IN_PROGRESS — 已提交审核的广告活动；
+CAMPAIGN_STATE_MODERATION_FAILED — 未通过审核的广告活动；
+CAMPAIGN_STATE_FINISHED — 该活动已结束，结束日期已过去，无法更改此活动，可以只能克隆或创建新的一份。
+page	
+integer <int64>
+页码。分页从1开始。
+
+pageSize	
+integer <int64>
+页面尺寸。
+
+回复
+200所有广告活动的列表
+Response Schema: application/json
+list	
+Array of objects (extcampaignCampaignInList)
+广告活动列表。
+
+Array ()
+id	
+string <uint64>
+广告活动标识符。
+
+paymentType	
+string (string)
+Default: "CAMPAIGN_TYPE_INVALID"
+支付方式：
+
+CPC — 点击费用，
+CPM — 按展示计价，
+CPO — 为订单。
+title	
+string
+活动名称。
+
+state	
+string (string)
+Default: "CAMPAIGN_STATE_UNKNOWN"
+广告活动状态：
+
+CAMPAIGN_STATE_RUNNING — 活跃的活动；
+CAMPAIGN_STATE_PLANNED — 计划中的活动，时间还没有到；
+CAMPAIGN_STATE_STOPPED — 由于预算不足而暂停的活动；
+CAMPAIGN_STATE_INACTIVE — 由于拥有者停止而停止的活动；
+CAMPAIGN_STATE_ARCHIVED — 归档的活动；
+CAMPAIGN_STATE_MODERATION_DRAFT — 已编辑的未发送到审核的活动；
+CAMPAIGN_STATE_MODERATION_IN_PROGRESS — 已提交审核的广告活动；
+CAMPAIGN_STATE_MODERATION_FAILED — 未通过审核的广告活动；
+CAMPAIGN_STATE_FINISHED — 该活动已结束，结束日期已过去，无法更改此活动，可以只能克隆或创建新的一份。
+advObjectType	
+string
+广告活动类型：
+
+SKU — 按点击付费。
+fromDate	
+string
+广告活动的启动日期。
+
+toDate	
+string
+广告活动结束日期。
+
+budget	
+string <uint64>
+广告活动预算。单位是卢布的百万分之一，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+dailyBudget	
+string <uint64>
+每日广告活动预算。计量单位是千分之一卢布，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+weeklyBudget	
+string <uint64>
+每周广告活动预算。单位是卢布的百万分之一，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+placement	
+Array of strings (extcampaignProductCampaignInListPlacement)
+Items Enum: "PLACEMENT_INVALID" "PLACEMENT_PDP" "PLACEMENT_SEARCH_AND_CATEGORY" "PLACEMENT_TOP_PROMOTION" "PLACEMENT_OVERTOP" "PLACEMENT_TAKEOVER"
+广告位置：
+
+PLACEMENT_INVALID — 未定义；
+PLACEMENT_PDP — 商品卡片；
+PLACEMENT_SEARCH_AND_CATEGORY — 搜索和类目（模版）。
+PLACEMENT_TOP_PROMOTION — 输出到顶部。
+productAutopilotStrategy	
+string
+Enum: "MAX_VIEWS" "MAX_CLICKS" "TOP_MAX_CLICKS" "NO_AUTO_STRATEGY" "TAKEOVER" "TOP_PROMOTION"
+用于活动的自适应策略：
+
+MAX_VIEWS — 最大显示次数。
+MAX_CLICKS — 搜索和推荐获得最多点击次数。
+TOP_MAX_CLICKS — 搜索获得最多点击次数。
+NO_AUTO_STRATEGY — 不使用自动策略。
+TAKEOVER — 搜索特别投放。
+TOP_PROMOTION — 登上顶端。
+autopilot	
+object (extcampaignCampaignAutopilotProperties)
+活动信息。 如果参数 productAutopilotStrategy 开启了自动策略，则返回。
+
+createdAt	
+string <date-time>
+创建活动的日期格式为RFC3339。
+
+updatedAt	
+string <date-time>
+更新广告的日期，以RFC3339格式。
+
+productCampaignMode	
+string
+Default: "PRODUCT_CAMPAIGN_MODE_AUTO"
+Enum: "PRODUCT_CAMPAIGN_MODE_AUTO" "PRODUCT_CAMPAIGN_MODE_MANUAL"
+创建和管理商品广告活动模式：
+
+PRODUCT_CAMPAIGN_MODE_AUTO — 自动;
+PRODUCT_CAMPAIGN_MODE_MANUAL — 手动。
+default请求错误
+请求范例
+
+复制
+GET /api/client/campaign?campaignIds=52374&advObjectType=SKU&state=CAMPAIGN_STATE_UNKNOWN HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+Host: api-performance.ozon.ru:443
+Content-Type: application/json
+Accept: application/json
+回复范例
+200default
+Content type
+application/json
+Example
+横幅营销活动
+{
+"list": {
+"id": 48949,
+"paymentType": "CPM",
+"title": "横幅营销活动",
+"state": "CAMPAIGN_STATE_RUNNING",
+"advObjectType": "BANNER",
+"fromDate": "2019-10-07",
+"toDate": "2021-10-07",
+"dailyBudget": 504000000,
+"placement": [
+"PLACEMENT_PDP"
+],
+"budget": 50000000,
+"createdAt": "2019-10-07T06:28:44.055042Z",
+"updatedAt": "2020-10-01T06:28:44.055042Z",
+"productAutopilotStrategy": "NO_AUTO_STRATEGY",
+"productCampaignMode": "PRODUCT_CAMPAIGN_MODE_AUTO"
+}
+}
+
+复制
+收回全部
+活动中的推广对象列表
+get
+/api/client/campaign/{campaignId}/objects
+
+描述和范例控制台
+用于获取 “按点击付费”、“横幅” 和 “视频横幅” 活动中的推广对象列表的方法。
+
+要获取“按订单付款”活动中的商品，请使用 POST/campaign/search_promo/v2/products。
+
+path Parameters
+campaignId
+required
+string <uint64>
+广告活动标识符。
+
+回复
+200广告活动中的推广对象列表
+Response Schema: application/json
+list	
+Array of objects (extcampaignCampaignObject)
+广告对象标识符列表。
+
+Array ()
+id	
+string <uint64>
+广告对象标识符：
+
+SKU — 用于在赞助商区和类目中的商品广告；
+数字标识符 — 用于横幅广告活动。
+default请求错误
+请求范例
+
+复制
+GET /api/client/campaign/48852/objects HTTP/1.1
+Host: api-performance.ozon.ru:443
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+回复范例
+200default
+Content type
+application/json
+{
+"list": [
+{
+"id": "string"
+}
+]
+}
+
+复制
+收回全部
+推广工具的投注限额
+get
+/api/client/limits/list
+
+描述和范例控制台
+您可以通过工具获取投注限制：
+
+按订单付款：
+工具的最低和最高押金。
+某些商品类目的最低订单金额。
+特别投放和按点击付费：
+每点击的最低和最高佣金。
+某些商品类目的最低点击佣金。
+回复
+200投注限制
+Response Schema: application/json
+limits	
+Array of objects (extcampaignLimitsData)
+推广工具的最低和最高投注。
+
+Array ()
+categories	
+Array of objects (extcampaignCategoriesLimits)
+二级类目最低费率。如果类目不在列表中，则应用工具的最低费率。
+
+maxBid	
+number <double>
+最大投注金额（俄罗斯卢布）。
+
+minBid	
+number <double>
+最低押金（以卢布为单位）。
+
+objectType	
+string
+Enum: "SKU" "SEARCH_PROMO"
+工具类型：
+
+SKU — 按点击付费，
+SEARCH_PROMO — 按订单付款。
+paymentMethod	
+string
+Enum: "CPO" "CPC" "CPM"
+付款方式：
+
+CPO — 订单付款，
+CPC — 点击付费，
+CPM — 每 1000 次展示支付。
+placement	
+string
+Enum: "CAMPAIGN_PLACEMENT_SEARCH_AND_CATEGORY" "CAMPAIGN_PLACEMENT_TOP_PROMOTION" "CAMPAIGN_PLACEMENT_OVERTOP"
+广告类型：
+
+CAMPAIGN_PLACEMENT_SEARCH_AND_CATEGORY — 搜索和推荐；
+CAMPAIGN_PLACEMENT_TOP_PROMOTION — 搜索；
+CAMPAIGN_PLACEMENT_OVERTOP — 特别投放。
+default错误
+回复范例
+200default
+Content type
+application/json
+{
+"limits": [
+{
+"categories": [
+{
+"bid": 0,
+"category": "string"
+}
+],
+"maxBid": 0,
+"minBid": 0,
+"objectType": "SKU",
+"paymentMethod": "CPO",
+"placement": "CAMPAIGN_PLACEMENT_SEARCH_AND_CATEGORY"
+}
+]
+}
+
+复制
+收回全部
+按 SKU 获取商品最低出价
+post
+/api/min/sku
+
+描述和范例控制台
+使用该方法，可查询一个或多个 SKU 商品的最低出价。
+
+Request Body schema: application/json
+marketplaceId	
+string (camptypeMarketplaceID)
+Enum: "MARKETPLACE_ID_RU" "MARKETPLACE_ID_KZ" "MARKETPLACE_ID_BY"
+橱窗国家：
+
+MARKETPLACE_ID_RU — 俄罗斯；
+MARKETPLACE_ID_KZ — 哈萨克斯坦；
+MARKETPLACE_ID_BY — 白俄罗斯。
+paymentType	
+string (string)
+Enum: "CPO" "CPC" "CPC_TOP"
+最低出价类型：
+
+CPO — “按订单付款” 类型的活动；
+CPC — 搜索和推荐；
+CPC_TOP — 搜索。
+sku	
+Array of strings <uint64>
+商品标识符：Ozon ID 或 SKU
+
+回复
+200最低出价金额
+Response Schema: application/json
+minBids	
+Array of objects (BidBySKUResponseBidSKU)
+关于最低出价的信息。
+
+Array ()
+bid	
+number <double>
+出价金额。
+
+sku	
+string <uint64>
+商品标识符：Ozon ID 或 SKU。
+
+default请求错误
+请求范例
+Content type
+application/json
+{
+"marketplaceId": "MARKETPLACE_ID_RU",
+"paymentType": "CPO",
+"sku": [
+"string"
+]
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"minBids": [
+{
+"bid": 0,
+"sku": "string"
+}
+]
+}
+
+复制
+收回全部
+带有积分的商品列表
+get
+/api/client/products_with_bonuses
+
+描述和范例控制台
+返回已发放积分的商品SKU列表。
+
+点击商品时，优先消耗该商品所发放的积分。如果积分用完，则使用活动的总预算。
+
+回复
+200带有积分的商品列表
+Response Schema: application/json
+skus	
+Array of strings <uint64>
+商品SKU列表。
+
+default请求错误
+回复范例
+200default
+Content type
+application/json
+{
+"skus": [
+"string"
+]
+}
+
+复制
+收回全部
+统计数据
+广告中心报告中的日期按莫斯科时间进行分类。
+要获取广告活动报告:
+
+发送请求生成报告。
+获取生成的UUID请求报告。
+广告活动统计
+post
+/api/client/statistics
+
+描述和范例控制台
+在请求中使用字段 from 和 to 或 dateFrom 和 dateTo 指定时间段。如果填写了所有字段 四个字段，回复将包含字段 dateFrom 和 dateTo 的暂时时间段的统计数据。
+
+性能API异步。因此，请求结果将不是报告本身，而是唯一标识符 已发送的请求，可以用于检查报告生成状态和下载报告。 报告格式 — CSV。
+
+档案包含不同类型广告的报告示例：
+
+横幅
+视频横幅
+按点击付费
+要请求JSON格式的报告，请在方法地址中添加 /json 并发送请求到 /api/client/statistics/json 地址。
+
+Request Body schema: application/json
+campaigns
+required
+Array of strings <uint64>
+需要准备报告的广告活动标识符列表。
+
+报告格式：
+
+CSV — 如果列表中只有一个活动。
+ZIP归档 — 如果列表中有多个广告活动。每个文件对应列表中的一个广告活动。文件名格式为 <идентификатор кампании>。csv。
+from	
+string <date-time>
+报告周期的起始日期，以RFC 3339格式。
+
+最长的报告获取时间为62天。
+
+to	
+string <date-time>
+报告周期的最终日期，以RFC 3339格式。
+
+最长的报告获取时间为62天。
+
+dateFrom	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+dateTo	
+string
+报告期的最终日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+groupBy	
+string (extstatGroupBy)
+Default: "NO_GROUP_BY"
+Enum: "NO_GROUP_BY" "DATE" "START_OF_WEEK" "START_OF_MONTH"
+时间分组类型：
+
+DATE — 按日期分组（按天）；
+START_OF_WEEK — 按周分组；
+START_OF_MONTH — 按月份分组。
+回复
+200活动统计
+Response Schema: application/json
+UUID	
+string
+已发送请求的唯一标识符。
+
+通过它可以检查报告生成状态和下载报告。
+
+vendor	
+boolean
+如果需要外部流量分析报告 — true。
+
+default请求错误
+请求范例
+PayloadJSON
+Content type
+application/json
+{
+"campaigns": [
+"string"
+],
+"from": "2019-08-24T14:15:22Z",
+"to": "2019-08-24T14:15:22Z",
+"dateFrom": "string",
+"dateTo": "string",
+"groupBy": "NO_GROUP_BY"
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"UUID": "0c159c60-ab92-46d9-9a6b-d225dbf5c7b1",
+"vendor": true
+}
+
+复制
+收回全部
+视频横幅展示统计
+post
+/api/client/statistics/video
+
+描述和范例控制台
+在请求中使用字段 dateFrom 和 dateTo 指定时间段。
+
+性能API异步。因此，请求结果将不是报告本身，而是唯一标识符 已发送的请求，可以用于检查报告生成状态和下载报告。 报告格式 — CSV。
+
+报告包含：
+
+名称；
+广告活动标识符；
+报告周期；
+广告条纹标识符；
+展示；
+点击；
+覆盖范围；
+CTR;
+可见销售量；
+容积检查：25%，50%，75%和100%；
+检验比例：25%，50%，75%和100%；
+声音播放的观看次数；
+订单；
+费用。
+要请求JSON格式的报告，请在方法地址中添加 /json 并发送请求到 /api/client/statistics/video/json 地址。
+
+Request Body schema: application/json
+campaigns
+required
+Array of strings <uint64>
+需要准备报告的广告活动标识符列表。
+
+报告格式：
+
+CSV — 如果列表中只有一个活动。
+ZIP归档 — 如果列表中有多个广告活动。每个文件对应列表中的一个广告活动。文件名格式为 <идентификатор кампании>。csv。
+dateFrom	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+dateTo	
+string
+报告期的最终日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+groupBy	
+string (extstatGroupBy)
+Default: "NO_GROUP_BY"
+Enum: "NO_GROUP_BY" "DATE" "START_OF_WEEK" "START_OF_MONTH"
+时间分组类型：
+
+DATE — 按日期分组（按天）；
+START_OF_WEEK — 按周分组；
+START_OF_MONTH — 按月份分组。
+回复
+200视频横幅广告的统计数据
+Response Schema: application/json
+UUID	
+string
+已发送请求的唯一标识符。
+
+通过它可以检查报告生成状态和下载报告。
+
+vendor	
+boolean
+如果需要外部流量分析报告 — true。
+
+default请求错误
+请求范例
+PayloadJSON
+Content type
+application/json
+{
+"campaigns": [
+"string"
+],
+"dateFrom": "string",
+"dateTo": "string",
+"groupBy": "NO_GROUP_BY"
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"UUID": "0c159c60-ab92-46d9-9a6b-d225dbf5c7b1",
+"vendor": true
+}
+
+复制
+收回全部
+订单报告
+post
+/api/client/statistics/attribution
+
+描述和范例控制台
+获取广告牌订单报告的方法。
+
+在请求中使用字段 from 和 to 或 dateFrom 和 dateTo 指定时间段。如果填写了所有字段 四个字段，回复将包含字段 dateFrom 和 dateTo 的暂时时间段的统计数据。
+
+性能API异步。因此，请求结果将不是报告本身，而是唯一标识符 已发送的请求，可以用于检查报告生成状态和下载报告。 报告格式 — CSV。 报告包含：
+
+名称;
+广告活动标识符;
+广告横幅标识符；
+报告周期;
+SKU;
+商品名称;
+订单数量;
+收入（卢布);
+模型订单数量;
+模型订单收入;
+归因类型。
+要请求JSON格式的报告，请在方法地址中添加 /json 并发送请求到 /api/client/statistics/attribution/json 地址。
+
+Request Body schema: application/json
+campaigns
+required
+Array of strings <uint64>
+需要准备报告的广告活动标识符列表。
+
+报告格式：
+
+CSV — 如果列表中只有一个活动。
+ZIP归档 — 如果列表中有多个广告活动。每个文件对应列表中的一个广告活动。文件名格式为 <идентификатор кампании>。csv。
+from	
+string <date-time>
+报告周期的起始日期，以RFC 3339格式。
+
+最长的报告获取时间为62天。
+
+to	
+string <date-time>
+报告周期的最终日期，以RFC 3339格式。
+
+最长的报告获取时间为62天。
+
+dateFrom	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+dateTo	
+string
+报告期的最终日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+groupBy	
+string (extstatGroupBy)
+Default: "NO_GROUP_BY"
+Enum: "NO_GROUP_BY" "DATE" "START_OF_WEEK" "START_OF_MONTH"
+时间分组类型：
+
+DATE — 按日期分组（按天）；
+START_OF_WEEK — 按周分组；
+START_OF_MONTH — 按月份分组。
+回复
+200订单报告
+Response Schema: application/json
+UUID	
+string
+已发送请求的唯一标识符。
+
+通过它可以检查报告生成状态和下载报告。
+
+vendor	
+boolean
+如果需要外部流量分析报告 — true。
+
+default请求错误
+请求范例
+PayloadJSON
+Content type
+application/json
+{
+"campaigns": [
+"string"
+],
+"from": "2019-08-24T14:15:22Z",
+"to": "2019-08-24T14:15:22Z",
+"dateFrom": "string",
+"dateTo": "string",
+"groupBy": "NO_GROUP_BY"
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"UUID": "0c159c60-ab92-46d9-9a6b-d225dbf5c7b1"
+}
+
+复制
+收回全部
+报告状态
+get
+/api/client/statistics/{UUID}
+
+描述和范例控制台
+path Parameters
+UUID
+required
+string
+请求唯一标识符。
+
+回复
+200报告状态
+Response Schema: application/json
+UUID	
+string
+用于进行检查的请求唯一标识符。
+
+state	
+string (extstatStatisticsRequestState)
+Default: "NOT_STARTED"
+Enum: "NOT_STARTED" "IN_PROGRESS" "ERROR" "OK"
+当前请求状态：
+
+NOT_STARTED — 请求等待执行；
+IN_PROGRESS — 请求正在进行中；
+ERROR — 请求执行失败；
+OK — 请求成功完成。
+createdAt	
+string <date-time>
+请求被服务器接收的日期和时间，时区为UTC。
+
+updatedAt	
+string <date-time>
+请求状态最后更新时间，时区UTC。
+
+request	
+object (extstatStatisticsRequest)
+原始请求结构。
+
+error	
+string
+出现错误的简要描述。
+
+如果请求执行失败，字段将存在。
+
+link	
+string
+相对链接到CSV格式的报告。
+
+字段存在，如果请求成功。
+
+kind	
+string
+Default: "STATS"
+Enum: "STATS" "SEARCH_PHRASES" "ATTRIBUTION" "VIDEO"
+请求的报告类型：
+
+STATS — 项目报告;
+SEARCH_PHRASES — 关于搜索词和商品类目的报告；
+ATTRIBUTION— “按订单付款”的订单报告；
+VIDEO — 视频广告展示报告。
+default请求错误
+请求范例
+
+复制
+GET /api/client/statistics/0c159c60-ab92-46d9-9a6b-d225dbf5c7b1 HTTP/1.1
+Host: api-performance.ozon.ru:443
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+Content-Type: application/json
+Accept: application/json
+回复范例
+200default
+Content type
+application/json
+{
+"UUID": "0c159c60-ab92-46d9-9a6b-d225dbf5c7b1",
+"state": "OK",
+"createdAt": "2020-03-23T19:30:58.264653Z",
+"updatedAt": "2020-03-23T19:30:58.689007Z",
+"request": {
+"attributionDays": "",
+"campaignId": 1,
+"campaigns": [
+12558
+],
+"dateFrom": "2020-03-01",
+"dateTo": "2020-03-20",
+"from": "2020-03-01T00:00:00Z",
+"groupBy": "DATE",
+"objects": [ ],
+"to": "2020-03-20T00:00:00Z"
+},
+"link": "string",
+"kind": "STATS"
+}
+
+复制
+收回全部
+通过界面生成的报告列表
+get
+/api/client/statistics/list
+
+描述和范例控制台
+通过广告管理界面生成的报告列表获取方法。
+
+query Parameters
+page	
+integer <int64>
+页面编号。
+
+pageSize	
+integer <int64>
+页面尺寸。
+
+回复
+200报告列表
+Response Schema: application/json
+items	
+Array of objects (extstatStatisticsReportsListItem)
+报告列表。
+
+total	
+string <uint64>
+报告数量。
+
+default请求错误
+请求范例
+
+复制
+GET /api/client/statistics/list?page=1&pageSize=100 HTTP/1.1
+Host: api-performance.ozon.ru:443
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+Content-Type: application/json
+Accept: application/json
+回复范例
+200default
+Content type
+application/json
+{
+"items": [
+{
+"campaigns": [
+{
+"id": "string",
+"title": "string"
+}
+],
+"meta": {
+"UUID": "string",
+"state": "NOT_STARTED",
+"createdAt": "2019-08-24T14:15:22Z",
+"updatedAt": "2019-08-24T14:15:22Z",
+"request": {
+"campaigns": [
+"string"
+],
+"from": "2019-08-24T14:15:22Z",
+"to": "2019-08-24T14:15:22Z",
+"dateFrom": "string",
+"dateTo": "string",
+"groupBy": "NO_GROUP_BY"
+},
+"error": "string",
+"link": "string",
+"kind": "STATS"
+},
+"name": "string"
+}
+],
+"total": "string"
+}
+
+复制
+收回全部
+通过API生成的报告列表
+get
+/api/client/statistics/externallist
+
+描述和范例控制台
+通过API服务账号生成的报告列表获取方法。
+
+query Parameters
+page	
+integer <int64>
+页面编号。
+
+pageSize	
+integer <int64>
+页面尺寸。
+
+回复
+200报告列表
+Response Schema: application/json
+items	
+Array of objects (extstatStatisticsReportsListItem)
+报告列表。
+
+total	
+string <uint64>
+报告数量。
+
+default请求错误
+请求范例
+
+复制
+GET /api/client/statistics/list?page=1&pageSize=100 HTTP/1.1
+Host: api-performance.ozon.ru:443
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+Content-Type: application/json
+Accept: application/json
+回复范例
+200default
+Content type
+application/json
+{
+"items": [
+{
+"campaigns": [
+{
+"id": "string",
+"title": "string"
+}
+],
+"meta": {
+"UUID": "string",
+"state": "NOT_STARTED",
+"createdAt": "2019-08-24T14:15:22Z",
+"updatedAt": "2019-08-24T14:15:22Z",
+"request": {
+"campaigns": [
+"string"
+],
+"from": "2019-08-24T14:15:22Z",
+"to": "2019-08-24T14:15:22Z",
+"dateFrom": "string",
+"dateTo": "string",
+"groupBy": "NO_GROUP_BY"
+},
+"error": "string",
+"link": "string",
+"kind": "STATS"
+},
+"name": "string"
+}
+],
+"total": "string"
+}
+
+复制
+收回全部
+获取报告
+get
+/api/client/statistics/report
+
+描述和范例控制台
+请求成功后，使用“报告状态”方法时，下载 CSV 或 ZIP 格式报告的链接将出现在link 字段中。
+
+报告格式在响应头中的content-type 字段中指定。 格式取决于原始请求中 campaigns 字段包含的活动数量：
+
+CSV — 如果列表中只有一个活动。
+ZIP 压缩包 — 如果列表中有多个广告活动。每个文件对应列表中的一个广告活动。文件名格式为 <广告活动标识符>。csv。
+query Parameters
+UUID	
+string
+请求唯一标识符。
+
+回复
+200报告。
+Response Headers
+content-type	
+string
+Example: "text/csv; charset=UTF-8"
+x-o3-trace-id	
+string
+Response Schema: text/csv
+string
+报告行。
+
+404不正确的UUID
+default请求错误
+请求范例
+
+复制
+GET /api/client/statistics/report?UUID=0c159c60-ab92-46d9-9a6b-d225dbf5c7b1 HTTP/1.1
+Host: api-performance.ozon.ru:443
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+回复范例
+200404default
+Content type
+text/csv
+
+复制
+; Кампания по продвижению товаров № 13883040, период 03.01.2025-03.01.2025 
+sku; Название товара; Цена товара, Р; Показы; Клики; CTR (%); В корзину; Ср. цена клика, г;Ср. цена 1000 показов, Р; Расход, Р, с НДС; Заказы; Выручка, Р; Заказы модели; Выручка с заказов модели, Р;ДРР, %: Дата добавления 
+Bcero;;;0;0;0,00; 0; 0,00;0,00; 0,00; 0; 0,00;0;0,00;0,00
+媒体活动统计
+get
+/api/client/statistics/campaign/media
+
+描述和范例控制台
+在请求中使用字段 from 和 to 或 dateFrom 和 dateTo 指定时间段。如果填写了所有字段 四个字段，回复将包含字段 dateFrom 和 dateTo 的暂时时间段的统计数据。
+
+报告格式 — CSV。
+
+要请求JSON格式的报告，请在方法地址中添加 /json 并发送请求到 /api/client/statistics/campaign/media/json 地址。
+
+报告包含：
+
+广告活动标识符；
+促销活动名称；
+活动格式；
+活动状态；
+每日预算（卢布）；
+预算以卢布为单位；
+费用（卢布）；
+展示；
+点击；
+平均价格每1000次展示为卢布；
+点击率（点击次数与展示次数的比例）；
+平均点击价格（卢布）；
+订单以件为单位；
+浏览后下单数（件）；
+浏览后订单金额；
+广告收入率；
+订单总金额；
+支付类型；
+预算类型。
+query Parameters
+campaignIds	
+Array of strings <uint64>
+需要准备报告的广告活动标识符列表。
+
+如果字段填写了，报告中只会显示指定的广告活动的统计数据。如果字段为空，回复中会显示 指定时间段内所有活动的统计数据。
+
+非必填字段。
+
+from	
+string <date-time>
+报告周期的起始日期，以RFC3339格式。
+
+非必填字段。
+
+to	
+string <date-time>
+报告周期的最终日期，以RFC3339格式。
+
+非必填字段。
+
+dateFrom	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+非必填字段。
+
+dateTo	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+非必填字段。
+
+回复
+200媒体活动统计
+Response Schema: application/json
+contentType	
+string
+报告格式。
+
+default请求错误
+请求范例
+
+复制
+GET /api/client/statistics/campaign/media?dateFrom=2024-08-01&dateTo=2024-08-01&campaignIds=11037395&campaignIds=11037396 HTTP/1.1
+Host: api-performance.ozon.ru:443
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+Content-Type: application/json
+回复范例
+200default
+Content type
+application/json
+{
+"contentType": "string"
+}
+
+复制
+收回全部
+按点击付费和特别投放活动统计
+get
+/api/client/statistics/campaign/product
+
+描述和范例控制台
+在请求中使用字段 from 和 to 或 dateFrom 和 dateTo 指定时间段。如果填写了所有字段
+
+四个字段，回复将包含字段 dateFrom 和 dateTo 的暂时时间段的统计数据。
+
+报告格式 — CSV。
+
+要请求JSON格式的报告，请在方法地址中添加 /json 并发送请求到 /api/client/statistics/campaign/product/json 地址。
+
+报告包含：
+
+广告活动标识符；
+促销活动名称；
+对象类型；
+活动状态；
+一周预算（卢布）；
+预算（卢布）；
+费用（卢布）；
+展示；
+点击；
+商品添加至购物车的次数；
+点击率（点击次数与展示次数的比例）；
+平均点击价格（卢布）；
+订单以件为单位；
+订单以卢布支付；
+广告费用占比（广告收入率）；
+推广类型；
+特别投放的位置。
+query Parameters
+campaignIds	
+Array of strings <uint64>
+需要准备报告的广告活动标识符列表。
+
+如果字段填写了，报告中只会显示指定的广告活动的统计数据。如果字段为空，回复中会显示 指定时间段内所有活动的统计数据。
+
+非必填字段。
+
+from	
+string <date-time>
+报告周期的起始日期，以RFC3339格式。
+
+非必填字段。
+
+to	
+string <date-time>
+报告周期的最终日期，以RFC3339格式。
+
+非必填字段。
+
+dateFrom	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+非必填字段。
+
+dateTo	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+非必填字段。
+
+回复
+200商品活动统计
+Response Schema: application/json
+contentType	
+string
+报告格式。
+
+default请求错误
+请求范例
+
+复制
+GET /api/client/statistics/campaign/product?dateFrom=2024-08-01&dateTo=2024-08-07&campaignIds=11037395&campaignIds=11037396 HTTP/1.1
+Host: api-performance.ozon.ru:443
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+Content-Type: application/json
+回复范例
+200default
+Content type
+application/json
+{
+"contentType": "string"
+}
+
+复制
+收回全部
+广告活动费用统计
+get
+/api/client/statistics/expense
+
+描述和范例控制台
+如果请求中没有指定字段 dateFrom 和 dateTo 的值，则响应将包含过去7天的统计数据。
+
+报告格式 — CSV。
+
+要请求JSON格式的报告，请在方法地址中添加 /json 并发送请求到 /api/client/statistics/expense/json 地址。 报告包含：
+
+广告活动标识符；
+日期；
+名称；
+开支；
+用户账户支出；
+使用积分。
+query Parameters
+campaignIds	
+Array of strings <uint64>
+需要准备报告的广告活动标识符列表。
+
+如果字段填写了，报告中只会显示指定的广告活动的统计数据。如果字段为空，回复中会显示 指定时间段内所有活动的统计数据。
+
+非必填字段。
+
+dateFrom	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+非必填字段。
+
+dateTo	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+非必填字段。
+
+回复
+200广告消耗统计
+Response Schema: application/json
+contentType	
+string
+报告格式。
+
+default请求错误
+请求范例
+
+复制
+GET /api/client/statistics/expense?campaigns=48852&dateFrom=2019-02-10&dateTo=2020-02-10 HTTP/1.1
+Host: api-performance.ozon.ru:443
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+Content-Type: application/json
+回复范例
+200default
+Content type
+application/json
+{
+"contentType": "string"
+}
+
+复制
+收回全部
+每日广告统计
+get
+/api/client/statistics/daily
+
+描述和范例控制台
+如果请求中没有指定字段 dateFrom 和 dateTo 的值，则响应将包含过去7天的统计数据。
+
+报告格式 — CSV。
+
+要请求JSON格式的报告，请在方法地址中添加 /json 并发送请求到 /api/client/statistics/daily/json 地址。
+
+报告包含：
+
+广告活动标识符;
+促销活动名称;
+日期;
+展示;
+点击;
+费用（卢布);
+订单以件为单位;
+订单以卢布支付。
+query Parameters
+campaignIds	
+Array of strings <uint64>
+需要准备报告的广告活动标识符列表。
+
+如果字段填写了，报告中只会显示指定的广告活动的统计数据。如果字段为空，回复中会显示 指定时间段内所有活动的统计数据。
+
+非必填字段。
+
+dateFrom	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+非必填字段。
+
+dateTo	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+非必填字段。
+
+回复
+200每日广告统计
+Response Schema: application/json
+contentType	
+string
+报告格式。
+
+default请求错误
+请求范例
+
+复制
+GET /api/client/statistics/daily?campaigns=48852&dateFrom=2019-02-10&dateTo=2020-02-10 HTTP/1.1
+Host: api-performance.ozon.ru:443
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+Content-Type: application/json
+回复范例
+200default
+Content type
+application/json
+{
+"contentType": "string"
+}
+
+复制
+收回全部
+“按订单付款”中的订单报告
+post
+/api/client/statistic/orders/generate
+
+描述和范例控制台
+在请求参数中，from 和 to 请填写时间段。
+
+性能API异步。 因此，请求结果将不是报告本身，而是发送请求的唯一标识符，可以通过此标识符检查报告生成状态和下载CSV格式的报告。
+
+要请求JSON格式的报告，请将方法地址中的地址添加为： /api/client/statistic/orders/generate/json。
+
+报告包含：
+
+报告周期；
+日期；
+订单编号；
+订单号；
+SKU;
+推广商品的SKU；
+货号；
+名称；
+订单来源；
+数量；
+价格，₽；
+赔偿率，%；
+出价，₽；
+费用，₽。
+Request Body schema: application/json
+from	
+string <date-time>
+报告周期的起始日期，以RFC 3339格式。
+
+to	
+string <date-time>
+报告周期的最终日期，以RFC 3339格式。
+
+回复
+200活动统计
+Response Schema: application/json
+UUID	
+string
+已发送请求的唯一标识符。
+
+通过它可以检查报告生成状态和下载报告。
+
+vendor	
+boolean
+如果需要外部流量分析报告 — true。
+
+default请求错误
+请求范例
+Content type
+application/json
+{
+"from": "2019-08-24T14:15:22Z",
+"to": "2019-08-24T14:15:22Z"
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"UUID": "string",
+"vendor": true
+}
+
+复制
+收回全部
+“按订单付款”中的商品报告
+post
+/api/client/statistic/products/generate
+
+描述和范例控制台
+在请求参数中，from 和 to 请填写时间段。
+
+性能API异步。
+
+因此，请求结果将不是报告本身，而是发送请求的唯一标识符，可以通过此标识符检查报告生成状态和下载CSV格式的报告。
+
+要请求JSON格式的报告，请将方法地址中的地址添加为： /api/client/statistic/products/generate/json。
+
+报告包含：
+
+报告周期；
+SKU;
+货号；
+名称；
+类目；
+推广；
+商品价格，₽；
+赔偿率，%；
+出价，₽；
+订单数量；
+订单总额，₽；
+费用，₽；
+销售（按点击付费），₽；
+费用（按点击付费），₽；
+订单（按点击付费），件；
+添加到购物车；
+广告收入率，%；
+最后更新。
+Request Body schema: application/json
+from	
+string <date-time>
+报告周期的起始日期，以RFC 3339格式。
+
+to	
+string <date-time>
+报告周期的最终日期，以RFC 3339格式。
+
+回复
+200活动统计
+Response Schema: application/json
+UUID	
+string
+已发送请求的唯一标识符。
+
+通过它可以检查报告生成状态和下载报告。
+
+vendor	
+boolean
+如果需要外部流量分析报告 — true。
+
+default请求错误
+请求范例
+Content type
+application/json
+{
+"from": "2019-08-24T14:15:22Z",
+"to": "2019-08-24T14:15:22Z"
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"UUID": "string",
+"vendor": true
+}
+
+复制
+收回全部
+搜索查询报告
+post
+/api/client/statistics/phrases
+
+描述和范例控制台
+该功能正处于测试阶段。
+
+仅支持为placement = PLACEMENT_TOP_PROMOTION属性的按点击付费广告活动生成报告。
+
+要请求JSON格式的报告，请在方法地址中添加 /json 并发送请求到 /api/client/statistics/phrases/json 地址。
+
+Request Body schema: application/json
+campaigns	
+Array of strings <uint64>
+广告活动列表。
+
+dateFrom	
+string
+报告周期的起始日期格式为YYYY-MM-DD。例如：2019-02-10。 日期不得早于2025年2月1日。
+
+dateTo	
+string
+报告期的最终日期格式为YYYY-MM-DD。例如：2019-02-10。
+
+from	
+string <date-time>
+报告周期的起始日期，以RFC 3339格式。 日期不得早于2025年2月1日。
+
+to	
+string <date-time>
+报告周期的最终日期，以RFC 3339格式。
+
+groupBy	
+string (extstatisticsGroupBy)
+Default: "NO_GROUP_BY"
+Enum: "NO_GROUP_BY" "DATE" "START_OF_WEEK" "START_OF_MONTH"
+时间分组类型：
+
+DATE — 按日期分组（按天）；
+START_OF_WEEK — 按周分组；
+START_OF_MONTH — 按月份分组。
+回复
+200搜索查询报告
+Response Schema: application/json
+UUID	
+string
+已发送请求的唯一标识符。
+
+通过它可以检查报告生成状态和下载报告。
+
+vendor	
+boolean
+如果需要外部流量分析报告 — true。
+
+default请求错误
+请求范例
+Content type
+application/json
+{
+"campaigns": [
+"string"
+],
+"dateFrom": "string",
+"dateTo": "string",
+"from": "2019-08-24T14:15:22Z",
+"to": "2019-08-24T14:15:22Z",
+"groupBy": "NO_GROUP_BY"
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"UUID": "string",
+"vendor": true
+}
+
+复制
+收回全部
+按点击付费和特别投放
+创建点击付费广告活动
+post
+/api/client/campaign/cpc/v2/product
+
+描述和范例控制台
+创建付费点击广告的方法。
+
+在请求成功执行时，响应中的 campaignId 字段将包含创建的广告活动的标识符。
+
+Request Body schema: application/json
+title	
+string
+广告活动名称。
+
+fromDate	
+string
+广告活动开始日期（莫斯科时间）。
+
+如果参数未填写，则启动日期为当前天的开始。 如果不需要审核，解封操作会在活动激活后立即开始。
+
+toDate	
+string
+按莫斯科时间的广告活动结束日期。 对于在自动模式下创建的点击付费广告活动，不考虑此参数。
+
+dailyBudget	
+string <uint64>
+广告活动每日预算限制。单位是俄罗斯卢布的百万分之一，四舍五入到戈比。 例如，参数值 1 000 000 等于1卢布。
+
+如果参数未填写，日预算不受限制。创建广告活动后，无法将日预算更改为周预算或反之。
+
+weeklyBudget	
+string <uint64>
+广告活动周预算限制。单位是卢布的百万分之一，四舍五入到戈比。 例如，参数值 1 000 000 等于1卢布。
+
+如果参数未填写，周预算不受限制。创建广告活动后，无法将周预算更改为日预算或反之。
+
+placement
+required
+string (string)
+Default: "PLACEMENT_INVALID"
+推广商品的位置：
+
+PLACEMENT_TOP_PROMOTION — 搜索;
+PLACEMENT_INVALID — 未定义;
+PLACEMENT_SEARCH_AND_CATEGORY — 搜索和推荐。
+productAutopilotStrategy	
+string (string)
+Default: "NO_AUTO_STRATEGY"
+用于活动的自适应策略：
+
+MAX_CLICKS — 搜索和推荐获得最多点击次数；
+TOP_MAX_CLICKS — 搜索获得最多点击次数；
+TARGET_BIDS — 搜索的平均点击费用；
+NO_AUTO_STRATEGY — 不使用自动策略;
+TOP_PROMOTION — 登上顶端。
+回复
+200活动已创建
+Response Schema: application/json
+campaignId	
+string <uint64>
+广告活动标识符。
+
+default请求错误
+请求范例
+Content type
+application/json
+{
+"title": "string",
+"fromDate": "string",
+"toDate": "string",
+"dailyBudget": "string",
+"weeklyBudget": "string",
+"placement": "PLACEMENT_INVALID",
+"productAutopilotStrategy": "NO_AUTO_STRATEGY"
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"campaignId": "string"
+}
+
+复制
+收回全部
+计算最低广告活动预算 Deprecated
+post
+/external/api/dynamic_budget
+
+描述和范例控制台
+2025年9月1日，旧方法将被停用。现在最低预算按以下公式计算：2 000 卢布 × 1 SKU。
+Request Body schema: application/json
+createCampaign	
+object (object)
+创建活动时的计算参数。
+
+updateCampaign	
+object (object)
+更新活动时的计算参数。
+
+回复
+200查询结果
+Response Schema: application/json
+campaignBudget	
+string <uint64>
+广告活动预算。单位是卢布的百万分之一，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+dynamicBudget	
+string <uint64>
+最低预算。
+
+dynamicBudgetType	
+string (string)
+Default: "DYNAMIC_BUDGET_REQUIRED"
+Enum: "DYNAMIC_BUDGET_REQUIRED" "DYNAMIC_BUDGET_RECOMMENDED"
+最低预算类型：
+
+DYNAMIC_BUDGET_REQUIRED — 必填；
+DYNAMIC_BUDGET_RECOMMENDED — 推荐的。
+skuPrice	
+string <uint64>
+每向广告活动中添加一件商品时，最低预算增加的金额（以卢布为单位）。
+
+default请求错误
+请求范例
+Content type
+application/json
+{
+"createCampaign": {
+"autopilotStrategy": "NO_AUTO_STRATEGY",
+"placement": "CAMPAIGN_PLACEMENT_INVALID",
+"skusCount": "string"
+},
+"updateCampaign": {
+"addingSkus": [
+"string"
+],
+"autopilotStrategy": {
+"strategy": "NO_AUTO_STRATEGY"
+},
+"campaignId": "string"
+}
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"campaignBudget": "string",
+"dynamicBudget": "string",
+"dynamicBudgetType": "DYNAMIC_BUDGET_REQUIRED",
+"skuPrice": "string"
+}
+
+复制
+收回全部
+激活广告活动
+post
+/api/client/campaign/{campaignId}/activate
+
+描述和范例控制台
+path Parameters
+campaignId
+required
+string <uint64>
+广告活动标识符。
+
+Request Body schema: application/json
+object (Empty)
+回复
+200活动已启动
+Response Schema: application/json
+id	
+string <uint64>
+广告活动标识符。
+
+paymentType	
+string (string)
+Default: "CAMPAIGN_TYPE_INVALID"
+支付方式：
+
+CPC — 点击费用。
+title	
+string
+活动名称。
+
+state	
+string (string)
+Default: "CAMPAIGN_STATE_UNKNOWN"
+广告活动状态：
+
+CAMPAIGN_STATE_RUNNING — 活跃的活动；
+CAMPAIGN_STATE_PLANNED — 计划中的活动，时间还没有到；
+CAMPAIGN_STATE_STOPPED — 由于预算不足而暂停的活动；
+CAMPAIGN_STATE_INACTIVE — 由于拥有者停止而停止的活动；
+CAMPAIGN_STATE_ARCHIVED — 归档的活动；
+CAMPAIGN_STATE_MODERATION_DRAFT — 已编辑的未发送到审核的活动；
+CAMPAIGN_STATE_MODERATION_IN_PROGRESS — 已提交审核的广告活动；
+CAMPAIGN_STATE_MODERATION_FAILED — 未通过审核的广告活动；
+CAMPAIGN_STATE_FINISHED — 该活动已结束，结束日期已过去，无法更改此活动，可以只能克隆或创建新的一份。
+advObjectType	
+string
+广告活动类型：
+
+SKU — 按点击付费和特别投放。
+fromDate	
+string
+广告活动的启动日期。
+
+toDate	
+string
+广告活动结束日期。
+
+budget	
+string <uint64>
+广告活动预算。单位是卢布的百万分之一，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+dailyBudget	
+string <uint64>
+每日广告活动预算。计量单位是千分之一卢布，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+weeklyBudget	
+string <uint64>
+每周广告活动预算。单位是卢布的百万分之一，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+placement	
+Array of strings (extcampaignProductCampaignPlacement)
+Items Enum: "PLACEMENT_INVALID" "PLACEMENT_PDP" "PLACEMENT_SEARCH_AND_CATEGORY" "PLACEMENT_TOP_PROMOTION"
+广告位置：
+
+PLACEMENT_INVALID — 未定义；
+PLACEMENT_PDP — 商品卡片；
+PLACEMENT_SEARCH_AND_CATEGORY — 搜索和类目（模版）；
+PLACEMENT_TOP_PROMOTION — 输出到顶部。
+productAutopilotStrategy	
+string
+Default: "NO_AUTO_STRATEGY"
+Enum: "MAX_VIEWS" "MAX_CLICKS" "TOP_MAX_CLICKS" "TAKEOVER" "NO_AUTO_STRATEGY" "TOP_PROMOTION"
+用于活动的自适应策略：
+
+MAX_VIEWS — 最大显示次数。
+MAX_CLICKS — 搜索和推荐获得最多点击次数。
+TOP_MAX_CLICKS — 搜索获得最多点击次数。
+TAKEOVER — 搜索特别投放。
+NO_AUTO_STRATEGY — 不使用自动策略。
+TOP_PROMOTION — 登上顶端。
+autopilot	
+object (extcampaignCampaignAutopilotProperties)
+活动信息。 如果参数 productAutopilotStrategy 开启了自动策略，则返回。
+
+createdAt	
+string <date-time>
+创建活动的日期格式为RFC3339。
+
+updatedAt	
+string <date-time>
+更新广告的日期，以RFC3339格式。
+
+productCampaignMode	
+string
+Default: "PRODUCT_CAMPAIGN_MODE_AUTO"
+Enum: "PRODUCT_CAMPAIGN_MODE_AUTO" "PRODUCT_CAMPAIGN_MODE_MANUAL"
+创建和管理商品广告活动模式：
+
+PRODUCT_CAMPAIGN_MODE_AUTO — 自动;
+PRODUCT_CAMPAIGN_MODE_MANUAL — 手动。
+default请求错误
+请求范例
+PayloadJSON
+Content type
+application/json
+{ }
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"id": "string",
+"paymentType": "CAMPAIGN_TYPE_INVALID",
+"title": "string",
+"state": "CAMPAIGN_STATE_UNKNOWN",
+"advObjectType": "string",
+"fromDate": "string",
+"toDate": "string",
+"budget": "string",
+"dailyBudget": "string",
+"weeklyBudget": "string",
+"placement": [
+"PLACEMENT_INVALID"
+],
+"productAutopilotStrategy": "NO_AUTO_STRATEGY",
+"autopilot": {
+"categoryId": "string",
+"skuAddMode": "PRODUCT_CAMPAIGN_SKU_ADD_MODE_UNKNOWN"
+},
+"createdAt": "2019-08-24T14:15:22Z",
+"updatedAt": "2019-08-24T14:15:22Z",
+"productCampaignMode": "PRODUCT_CAMPAIGN_MODE_AUTO"
+}
+
+复制
+收回全部
+关闭广告活动
+post
+/api/client/campaign/{campaignId}/deactivate
+
+描述和范例控制台
+path Parameters
+campaignId
+required
+string <uint64>
+广告活动标识符。
+
+Request Body schema: application/json
+object (Empty)
+回复
+200活动已停用
+Response Schema: application/json
+id	
+string <uint64>
+广告活动标识符。
+
+paymentType	
+string (string)
+Default: "CAMPAIGN_TYPE_INVALID"
+支付方式：
+
+CPC — 点击费用。
+title	
+string
+活动名称。
+
+state	
+string (string)
+Default: "CAMPAIGN_STATE_UNKNOWN"
+广告活动状态：
+
+CAMPAIGN_STATE_RUNNING — 活跃的活动；
+CAMPAIGN_STATE_PLANNED — 计划中的活动，时间还没有到；
+CAMPAIGN_STATE_STOPPED — 由于预算不足而暂停的活动；
+CAMPAIGN_STATE_INACTIVE — 由于拥有者停止而停止的活动；
+CAMPAIGN_STATE_ARCHIVED — 归档的活动；
+CAMPAIGN_STATE_MODERATION_DRAFT — 已编辑的未发送到审核的活动；
+CAMPAIGN_STATE_MODERATION_IN_PROGRESS — 已提交审核的广告活动；
+CAMPAIGN_STATE_MODERATION_FAILED — 未通过审核的广告活动；
+CAMPAIGN_STATE_FINISHED — 该活动已结束，结束日期已过去，无法更改此活动，可以只能克隆或创建新的一份。
+advObjectType	
+string
+广告活动类型：
+
+SKU — 按点击付费和特别投放。
+fromDate	
+string
+广告活动的启动日期。
+
+toDate	
+string
+广告活动结束日期。
+
+budget	
+string <uint64>
+广告活动预算。单位是卢布的百万分之一，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+dailyBudget	
+string <uint64>
+每日广告活动预算。计量单位是千分之一卢布，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+weeklyBudget	
+string <uint64>
+每周广告活动预算。单位是卢布的百万分之一，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+placement	
+Array of strings (extcampaignProductCampaignPlacement)
+Items Enum: "PLACEMENT_INVALID" "PLACEMENT_PDP" "PLACEMENT_SEARCH_AND_CATEGORY" "PLACEMENT_TOP_PROMOTION"
+广告位置：
+
+PLACEMENT_INVALID — 未定义；
+PLACEMENT_PDP — 商品卡片；
+PLACEMENT_SEARCH_AND_CATEGORY — 搜索和类目（模版）；
+PLACEMENT_TOP_PROMOTION — 输出到顶部。
+productAutopilotStrategy	
+string
+Default: "NO_AUTO_STRATEGY"
+Enum: "MAX_VIEWS" "MAX_CLICKS" "TOP_MAX_CLICKS" "TAKEOVER" "NO_AUTO_STRATEGY" "TOP_PROMOTION"
+用于活动的自适应策略：
+
+MAX_VIEWS — 最大显示次数。
+MAX_CLICKS — 搜索和推荐获得最多点击次数。
+TOP_MAX_CLICKS — 搜索获得最多点击次数。
+TAKEOVER — 搜索特别投放。
+NO_AUTO_STRATEGY — 不使用自动策略。
+TOP_PROMOTION — 登上顶端。
+autopilot	
+object (extcampaignCampaignAutopilotProperties)
+活动信息。 如果参数 productAutopilotStrategy 开启了自动策略，则返回。
+
+createdAt	
+string <date-time>
+创建活动的日期格式为RFC3339。
+
+updatedAt	
+string <date-time>
+更新广告的日期，以RFC3339格式。
+
+productCampaignMode	
+string
+Default: "PRODUCT_CAMPAIGN_MODE_AUTO"
+Enum: "PRODUCT_CAMPAIGN_MODE_AUTO" "PRODUCT_CAMPAIGN_MODE_MANUAL"
+创建和管理商品广告活动模式：
+
+PRODUCT_CAMPAIGN_MODE_AUTO — 自动;
+PRODUCT_CAMPAIGN_MODE_MANUAL — 手动。
+default请求错误
+请求范例
+PayloadJSON
+Content type
+application/json
+{ }
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"id": "string",
+"paymentType": "CAMPAIGN_TYPE_INVALID",
+"title": "string",
+"state": "CAMPAIGN_STATE_UNKNOWN",
+"advObjectType": "string",
+"fromDate": "string",
+"toDate": "string",
+"budget": "string",
+"dailyBudget": "string",
+"weeklyBudget": "string",
+"placement": [
+"PLACEMENT_INVALID"
+],
+"productAutopilotStrategy": "NO_AUTO_STRATEGY",
+"autopilot": {
+"categoryId": "string",
+"skuAddMode": "PRODUCT_CAMPAIGN_SKU_ADD_MODE_UNKNOWN"
+},
+"createdAt": "2019-08-24T14:15:22Z",
+"updatedAt": "2019-08-24T14:15:22Z",
+"productCampaignMode": "PRODUCT_CAMPAIGN_MODE_AUTO"
+}
+
+复制
+收回全部
+广告活动参数
+patch
+/api/client/campaign/{campaignId}
+
+描述和范例控制台
+更改广告活动参数的方法。
+
+path Parameters
+campaignId
+required
+string <uint64>
+广告活动标识符。
+
+Request Body schema: application/json
+autopilot	
+object
+活动信息。 如果参数 productAutopilotStrategy 开启了自动策略，则为必填项。
+
+fromDate	
+string
+广告活动开始日期（莫斯科时间）。
+
+不能早于当前日期。
+
+toDate	
+string
+按莫斯科时间的广告活动结束日期。
+
+不能早于开始日期。
+
+budget	
+string <uint64>
+广告活动总预算限制。单位是卢布的百万分之一，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+仅适用于品牌和代理机构的自动化活动。 在其他组织中无法安装新的总预算限制。如果已为活动设置预算，可以：
+
+移除限制：将此参数传为 0。
+不要更改公司预算。当预算用完时，可以删除预算限制或创建一个无限预算的新活动。
+dailyBudget	
+string <uint64>
+广告活动每日预算限制。单位是俄罗斯卢布的百万分之一，四舍五入到分。例如，参数值 1 000 000 等于1卢布。
+
+如果参数未填写，日预算不受限制。创建广告活动后，无法将日预算更改为周预算或反之。
+
+weeklyBudget	
+string <uint64>
+广告活动周预算限制。单位是卢布的百万分之一，四舍五入到戈比。 例如，参数值 1 000 000 等于1卢布。
+
+如果参数未填写，周预算不受限制。创建广告活动后，无法将周预算更改为日预算或反之。
+
+回复
+200广告参数已更新
+Response Schema: application/json
+campaignId	
+string <uint64>
+广告活动标识符。
+
+default请求错误
+请求范例
+PayloadJSON
+Content type
+application/json
+{
+"autopilot": { },
+"fromDate": "string",
+"toDate": "string",
+"budget": "string",
+"dailyBudget": "string",
+"weeklyBudget": "string"
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"campaignId": "string"
+}
+
+复制
+收回全部
+在付费点击和特别广告中出售的商品
+将商品添加到广告活动
+post
+/api/client/campaign/{campaignId}/products
+
+描述和范例控制台
+在活动中可以添加不超过500个商品。
+
+不同活动的参数填写建议
+
+为添加到活动的商品传递参数 sku 和 bid 的值。如果参数 bid 未指定， 自动设置竞争性报价。
+
+对于启用自动策略的活动，参数 bid 不会被考虑。
+
+对于开启自动策略的活动，可以从类别 autopilot.categoryId 中添加商品。
+
+path Parameters
+campaignId
+required
+string <uint64>
+广告活动标识符。
+
+Request Body schema: application/json
+bids	
+Array of objects (extcampaignAddProductsRequestProduct)
+点击佣金。
+
+回复
+200商品已添加到活动中
+Response Schema: application/json
+any
+default请求错误
+请求范例
+PayloadJSON
+Content type
+application/json
+{
+"bids": [
+{
+"sku": "string",
+"bid": "string"
+}
+]
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+null
+
+复制
+收回全部
+更新商品价格
+put
+/api/client/campaign/{campaignId}/products
+
+描述和范例控制台
+这个方法会重写停用词和带评分的短语列表。原始的停用词和带评分的短语将被删除。
+
+要在商品卡片中更新广告的竞价，需传递参数值 sku 和 bid。
+
+对于启用自动策略的活动，参数 bid 不会被考虑。
+
+path Parameters
+campaignId
+required
+string <uint64>
+广告活动标识符。
+
+Request Body schema: application/json
+bids	
+Array of objects (extcampaignUpdateProductsRequestProduct)
+点击佣金。
+
+回复
+200赔偿率已更新
+Response Schema: application/json
+any
+default请求错误
+请求范例
+PayloadJSON
+Content type
+application/json
+{
+"bids": [
+{
+"sku": "string",
+"bid": "string"
+}
+]
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+null
+
+复制
+收回全部
+活动商品列表
+get
+/api/client/campaign/{campaignId}/v2/products
+
+描述和范例控制台
+path Parameters
+campaignId
+required
+string <uint64>
+广告活动标识符。
+
+query Parameters
+page	
+integer <int64>
+页面编号。
+
+pageSize	
+integer <int64>
+页面尺寸。
+
+回复
+200活动商品列表
+Response Schema: application/json
+products	
+Array of objects (extcampaignGetProductsResponseV2Product)
+活动商品列表。
+
+Array ()
+sku	
+string <uint64>
+商品标识：Ozon ID 或 SKU。
+
+bid	
+string <uint64>
+单击成本（CPC）。
+
+title	
+string
+商品名称。
+
+default请求错误
+回复范例
+200default
+Content type
+application/json
+{
+"products": [
+{
+"sku": "string",
+"bid": "string",
+"title": "string"
+}
+]
+}
+
+复制
+收回全部
+从活动中删除商品
+post
+/api/client/campaign/{campaignId}/products/delete
+
+描述和范例控制台
+path Parameters
+campaignId
+required
+string <uint64>
+广告活动标识符。
+
+Request Body schema: application/json
+sku	
+Array of strings <uint64>
+推广商品的SKU。
+
+回复
+200商品已从活动中删除
+Response Schema: application/json
+any
+default请求错误
+请求范例
+PayloadJSON
+Content type
+application/json
+{
+"sku": [
+"string"
+]
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+null
+
+复制
+收回全部
+商品的竞争性投注
+get
+/api/client/campaign/{campaignId}/products/bids/competitive
+
+描述和范例控制台
+如果商品未添加到活动中，参数 bid 的值将为 0。 在一个请求中，您可以传递最多200个商品。
+
+path Parameters
+campaignId
+required
+string
+广告活动标识符。
+
+query Parameters
+skus	
+Array of strings
+商品SKU列表。
+
+回复
+200竞争性赔率
+Response Schema: application/json
+bids	
+Array of objects (object)
+投注列表。
+
+campaignId	
+string
+广告活动标识符。
+
+default请求错误
+回复范例
+200default
+Content type
+application/json
+{
+"bids": [
+{
+"bid": "string",
+"sku": "string"
+}
+],
+"campaignId": "string"
+}
+
+复制
+收回全部
+按订单付款
+“按订单付款”推广中的商品列表
+post
+/api/client/campaign/search_promo/v2/products
+
+描述和范例控制台
+Request Body schema: application/json
+page	
+integer <int64>
+页码。分页从1开始。
+
+pageSize	
+integer <int64>
+页面尺寸。
+
+回复
+200商品列表
+Response Schema: application/json
+products	
+Array of objects (object)
+商品列表。
+
+total	
+string <uint64>
+商品数量。
+
+default错误
+请求范例
+Content type
+application/json
+{
+"page": 0,
+"pageSize": 0
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"products": [
+{
+"bid": 0,
+"bidPrice": "string",
+"hint": {
+"campaignId": "string",
+"organisationTitle": "string"
+},
+"imageUrl": "string",
+"isSearchPromoAvailable": true,
+"previousBid": {
+"bid": 0,
+"bidPrice": "string",
+"updatedAt": "2019-08-24T14:15:22Z"
+},
+"previousVisibilityIndex": "string",
+"price": "string",
+"searchPromoStatus": true,
+"sku": "string",
+"sourceSku": "string",
+"title": "string",
+"views": {
+"previousWeek": "string",
+"thisWeek": "string"
+},
+"visibilityIndex": "string"
+}
+],
+"total": "string"
+}
+
+复制
+收回全部
+推荐的商品押金
+post
+/api/client/search_promo/bids/recommendation
+
+描述和范例控制台
+每个请求您可以传递最多200个SKU。
+
+Request Body schema: application/json
+sku	
+Array of strings <uint64>
+商品标识符列表。
+
+回复
+200推荐赔率
+Response Schema: application/json
+recommendedBids	
+object
+推荐投注列表。
+
+SKU*	
+string
+商品SKU和每个订单的推荐佣金（CPO）百分比。
+
+default错误
+请求范例
+Content type
+application/json
+{
+"sku": [
+"string"
+]
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"recommendedBids": {
+"sku1": "string",
+"sku2": "string"
+}
+}
+
+复制
+收回全部
+设置商品的价格
+post
+/api/client/campaign/search_promo/v2/bids/set
+
+描述和范例控制台
+如果商品尚未添加到推广中，系统将自动添加。
+
+在一个请求中可以传输最多1000个商品。
+
+Request Body schema: application/json
+bids	
+Array of objects (extcampaignSetSearchPromoBidsRequestV2Bid)
+投注的含义。
+
+回复
+200费率已设置
+Response Schema: application/json
+response	
+Array of objects (object)
+方法的回复。
+
+Array ()
+bid	
+number <double> (number)
+投注的含义。
+
+error	
+string
+无法更新评分的错误。
+
+sku	
+string <uint64> (string)
+推广商品的SKU。
+
+update	
+boolean
+如果投注已更新，应为 true。
+
+default错误
+请求范例
+Content type
+application/json
+{
+"bids": [
+{
+"bid": 0,
+"sku": "string"
+}
+]
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"response": [
+{
+"bid": 0,
+"error": "string",
+"sku": "string",
+"update": true
+}
+]
+}
+
+复制
+收回全部
+在“按订单付款”中开启商品推广
+post
+/api/client/search_promo/product/enable
+
+描述和范例控制台
+在一个请求中可以传输最多1000个商品。
+
+Request Body schema: application/json
+skus	
+Array of strings <uint64>
+商品标识符列表。
+
+回复
+200商品推广已开启
+Response Schema: application/json
+response	
+Array of objects (object)
+方法的回复。
+
+Array ()
+bid	
+number <double> (number)
+投注的含义。
+
+error	
+string
+无法开启商品推广的错误。
+
+sku	
+string <uint64> (string)
+推广商品的SKU。
+
+update	
+boolean
+如果商品推广已启用，应为 true。
+
+default错误
+请求范例
+Content type
+application/json
+{
+"skus": [
+"string"
+]
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"response": [
+{
+"bid": 0,
+"error": "string",
+"sku": "string",
+"update": true
+}
+]
+}
+
+复制
+收回全部
+在“按订单付款”中关闭商品推广
+post
+/api/client/search_promo/product/disable
+
+描述和范例控制台
+在一个请求中可以传输最多1000个商品。
+
+Request Body schema: application/json
+skus	
+Array of strings <uint64>
+商品标识符列表。
+
+回复
+200商品推广已关闭
+Response Schema: application/json
+object
+default错误
+请求范例
+Content type
+application/json
+{
+"skus": [
+"string"
+]
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{ }
+
+复制
+收回全部
+从“按订单付款”推广中删除商品
+post
+/api/client/campaign/search_promo/v2/bids/delete
+
+描述和范例控制台
+在一个请求中可以传输最多1000个商品。
+
+Request Body schema: application/json
+sku	
+Array of strings <uint64>
+商品标识符列表。
+
+回复
+200商品已被删除
+Response Schema: application/json
+object
+default错误
+请求范例
+Content type
+application/json
+{
+"sku": [
+"string"
+]
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{ }
+
+复制
+收回全部
+外部流量分析
+外部流量分析报告
+post
+/api/client/vendors/statistics
+
+描述和范例控制台
+用于启动外部流量分析报告生成的方法。
+
+dateFrom 和 dateTo 之间的差异不得超过三个月。如果差异大于三个月， 报告将在指定在 dateFrom 中的日期后3个月内生成。
+
+Request Body schema: application/json
+dateFrom	
+string
+报告期开始。
+
+日期不得早于2022年1月1日。
+
+dateTo	
+string
+报告期结束。
+
+日期必须晚于 dateFrom 不超过3个月。如果日期晚于3个月， 报告将在指定在 dateFrom 中的日期后3个月内生成。
+
+type	
+string
+Enum: "TRAFFIC_SOURCES" "ORDERS"
+报告类型：
+
+TRAFFIC_SOURCES — 交通来源报告。
+ORDERS — 订单报告。
+回复
+200成功
+Response Schema: application/json
+UUID	
+string
+已发送请求的唯一标识符。
+
+通过它可以检查报告生成状态和下载报告。
+
+vendor	
+boolean
+如果需要外部流量分析报告 — true。
+
+default请求错误
+请求范例
+Content type
+application/json
+{
+"dateFrom": "string",
+"dateTo": "string",
+"type": "TRAFFIC_SOURCES"
+}
+
+复制
+收回全部
+回复范例
+200default
+Content type
+application/json
+{
+"UUID": "string",
+"vendor": true
+}
+
+复制
+收回全部
+请求的报告列表，包含外部流量分析
+get
+/api/client/vendors/statistics/list
+
+描述和范例控制台
+query Parameters
+page	
+integer <int64>
+页面编号。
+
+pageSize	
+integer <int64>
+页面尺寸。
+
+回复
+200报告
+Response Schema: application/json
+items	
+Array of objects (VendorStatisticsReportsListItem)
+报告信息。
+
+total	
+string <uint64>
+报告数量。
+
+default请求错误
+回复范例
+200default
+Content type
+application/json
+{
+"items": [
+{
+"meta": {
+"UUID": "string",
+"createdAt": "2019-08-24T14:15:22Z",
+"error": "string",
+"link": "string",
+"request": {
+"dateFrom": "string",
+"dateTo": "string",
+"type": "TRAFFIC_SOURCES"
+},
+"state": "NOT_STARTED",
+"updatedAt": "2019-08-24T14:15:22Z"
+},
+"name": "string"
+}
+],
+"total": "string"
+}
+
+复制
+收回全部
+关于UUID报告的信息
+get
+/api/client/vendors/statistics/{UUID}
+
+描述和范例控制台
+path Parameters
+UUID
+required
+string
+请求唯一标识符。
+
+query Parameters
+vendor
+required
+boolean
+标志，请求外部流量分析报告。请将此参数设置为 true。
+
+回复
+200报告信息
+Response Schema: application/json
+UUID	
+string
+已发送请求的唯一标识符，可以用于后续检查请求执行状态并下载报告。
+
+createdAt	
+string <date-time>
+报告生成日期。
+
+error	
+string
+错误描述。
+
+link	
+string
+报告链接。
+
+request	
+object (extstatVendorStatisticsRequest)
+请求生成报告的方法。
+
+state	
+any
+Default: "NOT_STARTED"
+Enum: "NOT_STARTED" "IN_PROGRESS" "OK" "ERROR" "TIMEOUT" "CANCEL"
+报告生成状态：
+
+NOT_STARTED — 仍未开始。
+IN_PROGRESS — 在进行中。
+CANCEL — 已取消。
+OK — 报告已生成。
+ERROR — 发生错误。
+TIMEOUT — 等待时间已到。
+updatedAt	
+string <date-time>
+状态变更时间。
+
+default请求错误
+回复范例
+200default
+Content type
+application/json
+{
+"UUID": "string",
+"createdAt": "2019-08-24T14:15:22Z",
+"error": "string",
+"link": "string",
+"request": {
+"dateFrom": "string",
+"dateTo": "string",
+"type": "TRAFFIC_SOURCES"
+},
+"state": "NOT_STARTED",
+"updatedAt": "2019-08-24T14:15:22Z"
+}
+
+复制
+收回全部
+外部广告活动的组织标记
+get
+/api/client/organisation/vendor_tag
+
+描述和范例控制台
+方法返回 utm_campaign 根据组织标识。
+
+了解更多关于外部广告活动的链接
+
+query Parameters
+orgId
+required
+string <uint64>
+组织标识符。
+
+回复
+200组织标记
+Response Schema: application/json
+tag	
+string
+组织的前缀用于UTM标记。
+
+default请求错误
+请求范例
+
+复制
+GET /api/client/organisation/vendor_tag?orgId=42 HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.WyJFTWhVVU...qTz2XXZBv41h4
+Host: api-performance.ozon.ru:443
+Content-Type: application/json
+Accept: application/json
+回复范例
+200default
+Content type
+application/json
+{
+"tag": "vendor_org_42"
+}
+
+复制
+收回全部
