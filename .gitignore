@@ -15,9 +15,22 @@ venv/
 .idea/
 .vscode/
 
+# Local assistant/persona memory
+AGENTS.md
+SOUL.md
+USER.md
+MEMORY.md
+memory/
+
 # Ozon runtime artifacts
+secrets/
 dashboard/data/history/
+dashboard/data/latest.json
 dashboard/data/*.db
+backups/
+deploy/data/
+deploy/secrets/
+deploy/*.env
 
 # OS junk
 .DS_Store
