@@ -35,6 +35,13 @@ def _connect(db_path: pathlib.Path | str | None = None) -> tuple[sqlite3.Connect
     return conn, path
 
 
+def _last_insert_id(cursor: sqlite3.Cursor) -> int:
+    row_id = cursor.lastrowid
+    if row_id is None:
+        raise RuntimeError('failed to read inserted row id')
+    return int(row_id)
+
+
 def ensure_db(db_path: pathlib.Path | str | None = None) -> str:
     conn, path = _connect(db_path)
     try:
@@ -254,7 +261,7 @@ def create_admin_user(
         conn.commit()
         row = conn.execute(
             'SELECT id, username, is_active, created_at, updated_at, last_login_at FROM admin_users WHERE id = ?',
-            (int(cursor.lastrowid),),
+            (_last_insert_id(cursor),),
         ).fetchone()
         if row is None:
             raise RuntimeError('failed to reload created admin user')
@@ -480,7 +487,7 @@ def create_admin_session(
         )
         conn.commit()
         return {
-            'id': int(cursor.lastrowid),
+            'id': _last_insert_id(cursor),
             'token': token,
             'created_at': now,
             'expires_at': expires_at,
@@ -591,7 +598,7 @@ def write_admin_audit_log(
             ),
         )
         conn.commit()
-        return int(cursor.lastrowid)
+        return _last_insert_id(cursor)
     finally:
         conn.close()
 
@@ -735,7 +742,7 @@ def create_store_config_version(
             FROM store_config_versions
             WHERE id = ?
             """,
-            (int(cursor.lastrowid),),
+            (_last_insert_id(cursor),),
         ).fetchone()
         if saved is None:
             raise RuntimeError('failed to reload store config version')
@@ -1042,7 +1049,7 @@ def save_snapshot(payload: Dict[str, Any], db_path: pathlib.Path | str | None = 
             """,
             values,
         )
-        snapshot_id = int(cursor.lastrowid)
+        snapshot_id = _last_insert_id(cursor)
 
         for item in payload.get('results') or []:
             overview = item.get('overview') or {}

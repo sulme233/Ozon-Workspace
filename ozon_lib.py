@@ -448,8 +448,9 @@ def request_csv(
 
 
 def print_json(payload: Dict[str, Any]) -> None:
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8')
+    reconfigure = getattr(sys.stdout, 'reconfigure', None)
+    if callable(reconfigure):
+        reconfigure(encoding='utf-8')
     print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 
