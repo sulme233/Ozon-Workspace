@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 from ozon_lib import (
     OzonConfigError,
     cli_error,
+    fetch_warehouses,
     get_store_identity,
     load_config,
     print_json,
@@ -17,15 +18,7 @@ from ozon_lib import (
 
 def analyze_store_logistics(store: Dict[str, Any]) -> Dict[str, Any]:
     headers = seller_headers(store)
-    warehouse_data = request_json(
-        'POST',
-        'https://api-seller.ozon.ru/v2/warehouse/list',
-        headers=headers,
-        json_body={'limit': 200, 'cursor': ''},
-        timeout=60,
-        error_context='Failed to fetch warehouse list',
-    )
-    warehouses = warehouse_data.get('warehouses', []) if isinstance(warehouse_data, dict) else []
+    warehouses = fetch_warehouses(store, limit=200, timeout=60)
 
     warehouse_items: List[Dict[str, Any]] = []
     delivery_methods_total = 0

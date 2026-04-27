@@ -172,6 +172,7 @@ def get_ozon_api_catalog(group: str = 'all') -> Dict[str, Any]:
             'references/ozon_api/seller_api_zh.txt',
             'references/ozon_api/performance_api_zh.txt',
             'docs/API_FEATURE_OPPORTUNITIES.md',
+            'docs/OZON_API_DEEP_DIVE.md',
         ],
         'endpoints': endpoints,
     }

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List
 
 from ozon_lib import (
@@ -22,6 +23,18 @@ from ozon_lib import (
     run_store_pipeline,
     today_range,
 )
+
+
+def is_future_interval_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return 'future' in message or 'будущ' in message
+
+
+def pick_value(row: Dict[str, Any], keys: List[str], default: Any = '0') -> Any:
+    for key in keys:
+        if key in row:
+            return row.get(key, default)
+    return default
 
 
 def classify_ad_row(clicks: int, carts: int, orders: int, expense: float, roas: float) -> Dict[str, str]:
@@ -61,9 +74,34 @@ def classify_ad_row(clicks: int, carts: int, orders: int, expense: float, roas: 
     }
 
 
-def fetch_campaign_objects(headers: Dict[str, str], campaign_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+def fetch_campaign_objects(
+    headers: Dict[str, str],
+    campaign_ids: List[str],
+    *,
+    max_workers: int = 8,
+) -> Dict[str, List[Dict[str, Any]]]:
     result: Dict[str, List[Dict[str, Any]]] = {}
-    for cid in campaign_ids:
+
+    if not campaign_ids:
+        return result
+
+    workers = max(1, min(max_workers, len(campaign_ids)))
+    if workers == 1:
+        for cid in campaign_ids:
+            try:
+                data = request_json(
+                    'GET',
+                    f'https://api-performance.ozon.ru/api/client/campaign/{cid}/objects',
+                    headers=headers,
+                    timeout=30,
+                    error_context=f'Failed to fetch campaign objects for {cid}',
+                )
+                result[cid] = data.get('list', []) if isinstance(data, dict) else []
+            except Exception:
+                result[cid] = []
+        return result
+
+    def fetch_one(cid: str) -> tuple[str, List[Dict[str, Any]]]:
         try:
             data = request_json(
                 'GET',
@@ -72,13 +110,28 @@ def fetch_campaign_objects(headers: Dict[str, str], campaign_ids: List[str]) -> 
                 timeout=30,
                 error_context=f'Failed to fetch campaign objects for {cid}',
             )
-            result[cid] = data.get('list', []) if isinstance(data, dict) else []
+            return cid, data.get('list', []) if isinstance(data, dict) else []
         except Exception:
-            result[cid] = []
+            return cid, []
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        future_map = {executor.submit(fetch_one, cid): cid for cid in campaign_ids}
+        for future in as_completed(future_map):
+            cid = future_map[future]
+            try:
+                key, payload = future.result()
+                result[key] = payload
+            except Exception:
+                result[cid] = []
     return result
 
 
-def analyze_store_ads(store: Dict[str, Any], days: int = 7, limit_campaigns: int | None = None) -> Dict[str, Any]:
+def analyze_store_ads(
+    store: Dict[str, Any],
+    days: int = 7,
+    limit_campaigns: int | None = None,
+    object_workers: int = 8,
+) -> Dict[str, Any]:
     start, end = today_range(days=days)
     token = get_perf_token(store)
     headers = perf_headers(token)
@@ -119,9 +172,9 @@ def analyze_store_ads(store: Dict[str, Any], days: int = 7, limit_campaigns: int
         )
     except OzonApiError as exc:
         # Some accounts reject same-day ranges as future intervals; retry on yesterday.
-        if 'future' not in str(exc).lower() and 'будущ' not in str(exc).lower():
+        if not is_future_interval_error(exc):
             raise
-        fallback_end = start - dt.timedelta(days=1)
+        fallback_end = end - dt.timedelta(days=1)
         fallback_start = fallback_end - dt.timedelta(days=max(days - 1, 0))
         query = [('campaignIds', cid) for cid in campaign_ids] + [
             ('dateFrom', fallback_start.isoformat()),
@@ -137,7 +190,7 @@ def analyze_store_ads(store: Dict[str, Any], days: int = 7, limit_campaigns: int
         )
         start, end = fallback_start, fallback_end
     rows = parse_csv_semicolon(csv_text)
-    objects_map = fetch_campaign_objects(headers, campaign_ids)
+    objects_map = fetch_campaign_objects(headers, campaign_ids, max_workers=object_workers)
 
     detail = []
     alerts = []
@@ -146,22 +199,27 @@ def analyze_store_ads(store: Dict[str, Any], days: int = 7, limit_campaigns: int
     reasons: List[str] = []
 
     for row in rows:
-        campaign_id = str(row.get('ID', '')).strip()
-        expense = ru_num(row.get('Расход, ₽', '0'))
-        revenue = ru_num(row.get('Продажи, ₽', '0'))
-        orders = int(ru_num(row.get('Заказы, шт.', '0')))
-        impressions = int(ru_num(row.get('Показы', '0')))
-        clicks = int(ru_num(row.get('Клики', '0')))
-        carts = int(ru_num(row.get('В корзину', '0')))
-        ctr = ru_num(row.get('CTR', '0'))
-        cpc = ru_num(row.get('Средняя стоимость клика, ₽', '0'))
+        campaign_id = str(pick_value(row, ['ID', 'Campaign ID', 'campaign_id', 'CampaignId'], '')).strip()
+        expense = ru_num(pick_value(row, ['Расход, ₽', 'Расход, руб.', 'Expense, ₽', 'Expense, RUB', 'Expense']))
+        revenue = ru_num(pick_value(row, ['Продажи, ₽', 'Продажи, руб.', 'Revenue, ₽', 'Revenue, RUB', 'Revenue']))
+        orders = int(ru_num(pick_value(row, ['Заказы, шт.', 'Заказы', 'Orders, pcs', 'Orders'])))
+        impressions = int(ru_num(pick_value(row, ['Показы', 'Impressions'])))
+        clicks = int(ru_num(pick_value(row, ['Клики', 'Clicks'])))
+        carts = int(ru_num(pick_value(row, ['В корзину', 'Cart Adds', 'Add to cart'])))
+        ctr = ru_num(pick_value(row, ['CTR']))
+        cpc = ru_num(
+            pick_value(
+                row,
+                ['Средняя стоимость клика, ₽', 'Средняя цена клика, ₽', 'Avg CPC, ₽', 'Average CPC, ₽', 'CPC'],
+            )
+        )
         roas = revenue / expense if expense else 0.0
         obj_ids = [str(x.get('id', '')) for x in objects_map.get(campaign_id, [])[:5]]
         rule = classify_ad_row(clicks, carts, orders, expense, roas)
 
         item = {
             'campaign_id': campaign_id,
-            'campaign_name': row.get('Название', ''),
+            'campaign_name': pick_value(row, ['Название', 'Campaign Name', 'campaign_name'], ''),
             'sku_preview': obj_ids,
             'expense_rub': round(expense, 2),
             'revenue_rub': round(revenue, 2),
@@ -226,6 +284,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--days', type=int, default=7, help='统计天数，默认 7')
     parser.add_argument('--store', type=str, default='', help='指定店铺名称或店铺代号')
     parser.add_argument('--limit-campaigns', type=int, default=0, help='限制广告活动数量，0 表示不限制')
+    parser.add_argument('--object-workers', type=int, default=8, help='并发拉取广告对象详情的线程数')
     return parser
 
 
@@ -234,13 +293,18 @@ def main() -> None:
         args = build_parser().parse_args()
         require_positive_int(args.days, field='days')
         require_non_negative_int(args.limit_campaigns, field='limit_campaigns')
+        require_positive_int(args.object_workers, field='object_workers')
         config = load_config()
         store_filter = (args.store or '').strip()
         selected, results = run_store_pipeline(
             config=config,
             store_filter=store_filter,
             analyzer=analyze_store_ads,
-            analyzer_kwargs={'days': args.days, 'limit_campaigns': (args.limit_campaigns or None)},
+            analyzer_kwargs={
+                'days': args.days,
+                'limit_campaigns': (args.limit_campaigns or None),
+                'object_workers': args.object_workers,
+            },
         )
         print_json({
             'days': args.days,

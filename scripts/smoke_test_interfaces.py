@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
+import http.cookiejar
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -23,6 +25,7 @@ from ozon_lib import (
     fetch_fbs_postings,
     fetch_perf_campaigns,
     fetch_product_prices,
+    fetch_warehouses,
     load_config,
     print_json,
     require_non_negative_int,
@@ -49,6 +52,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--refresh-timeout', type=int, default=300, help='Seconds to wait for /api/refresh')
     parser.add_argument('--skip-refresh', action='store_true', help='Skip /api/refresh call')
     parser.add_argument('--strict-refresh', action='store_true', help='Fail smoke test when refresh times out')
+    parser.add_argument('--admin-username', type=str, default=str(os.environ.get('OZON_ADMIN_USERNAME') or ''), help='Admin username for protected API smoke checks')
+    parser.add_argument('--admin-password', type=str, default=str(os.environ.get('OZON_ADMIN_PASSWORD') or ''), help='Admin password for protected API smoke checks')
     parser.add_argument('--probe-ozon', action='store_true', help='Also probe key read-only Ozon endpoints')
     parser.add_argument('--ozon-store', type=str, default='', help='Store filter for Ozon endpoint probes')
     return parser
@@ -89,6 +94,7 @@ def request_json_http(
     *,
     timeout: int,
     payload: Dict[str, Any] | None = None,
+    opener: urllib.request.OpenerDirector | None = None,
 ) -> Any:
     data = None
     headers = {'Accept': 'application/json'}
@@ -96,8 +102,9 @@ def request_json_http(
         data = json.dumps(payload).encode('utf-8')
         headers['Content-Type'] = 'application/json'
     request = urllib.request.Request(url, method=method.upper(), headers=headers, data=data)
+    active_opener = opener or urllib.request.build_opener()
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with active_opener.open(request, timeout=timeout) as response:
             body = response.read().decode('utf-8', errors='replace')
             return json.loads(body)
     except urllib.error.HTTPError as exc:
@@ -120,6 +127,32 @@ def wait_for_health(base_url: str, *, startup_timeout: int, request_timeout: int
             last_error = str(exc)
         time.sleep(1)
     raise RuntimeError(f'/api/health did not become ready in {startup_timeout}s: {last_error}')
+
+
+def wait_for_refresh_job(
+    base_url: str,
+    *,
+    job_id: str,
+    refresh_timeout: int,
+    request_timeout: int,
+) -> Dict[str, Any]:
+    deadline = time.time() + refresh_timeout
+    while time.time() < deadline:
+        payload = request_json_http(
+            'GET',
+            f'{base_url}/api/refresh/status?job_id={urllib.parse.quote(job_id)}',
+            timeout=request_timeout,
+        )
+        if not isinstance(payload, dict) or payload.get('status') != 'ok':
+            raise RuntimeError(f'Failed to query refresh job status for {job_id}: {payload}')
+        job = payload.get('job') if isinstance(payload.get('job'), dict) else {}
+        status = str(job.get('status', '')).strip().lower()
+        if status == 'ok':
+            return job
+        if status == 'error':
+            raise RuntimeError(str(job.get('error') or f'refresh job {job_id} failed'))
+        time.sleep(2)
+    raise TimeoutError(f'refresh job timeout: {job_id}')
 
 
 def add_check(results: List[Dict[str, Any]], name: str, started: float, status: str, detail: str) -> None:
@@ -155,6 +188,8 @@ def run_local_smoke(args: argparse.Namespace) -> Dict[str, Any]:
     checks: List[Dict[str, Any]] = []
     process: subprocess.Popen[str] | None = None
     all_ok = True
+    cookie_jar = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookie_jar))
 
     try:
         process = subprocess.Popen(
@@ -173,32 +208,98 @@ def run_local_smoke(args: argparse.Namespace) -> Dict[str, Any]:
                 request_timeout=args.request_timeout,
             )
             add_check(checks, 'health', started, 'ok', f"db_path={health.get('db_path', '')}")
+            if process.poll() is not None:
+                add_check(
+                    checks,
+                    'serve_process',
+                    started,
+                    'error',
+                    f'serve process exited unexpectedly with code {process.returncode}. Possible port conflict on {args.port}.',
+                )
+                return {'status': 'error', 'checks': checks, 'base_url': base_url}
         except Exception as exc:
             add_check(checks, 'health', started, 'error', str(exc))
             return {'status': 'error', 'checks': checks, 'base_url': base_url}
+
+        started = time.time()
+        try:
+            auth_status = request_json_http('GET', f'{base_url}/api/auth/status', timeout=args.request_timeout, opener=opener)
+            bootstrap = auth_status.get('bootstrap') if isinstance(auth_status, dict) else {}
+            if isinstance(bootstrap, dict) and bootstrap.get('can_bootstrap') and args.admin_username and args.admin_password:
+                request_json_http(
+                    'POST',
+                    f'{base_url}/api/auth/bootstrap',
+                    timeout=args.request_timeout,
+                    payload={'username': args.admin_username, 'password': args.admin_password},
+                    opener=opener,
+                )
+            if args.admin_username and args.admin_password:
+                request_json_http(
+                    'POST',
+                    f'{base_url}/api/auth/login',
+                    timeout=args.request_timeout,
+                    payload={'username': args.admin_username, 'password': args.admin_password},
+                    opener=opener,
+                )
+                add_check(checks, 'auth_login', started, 'ok', f'user={args.admin_username}')
+            else:
+                add_check(checks, 'auth_login', started, 'warning', 'admin credentials not provided; protected APIs may fail')
+        except Exception as exc:
+            add_check(checks, 'auth_login', started, 'error', str(exc))
+            all_ok = False
 
         if args.skip_refresh:
             checks.append({'name': 'refresh', 'status': 'skipped', 'elapsed_ms': 0, 'detail': 'skip_refresh=true'})
         else:
             started = time.time()
             try:
-                refreshed = request_json_http('POST', f'{base_url}/api/refresh', timeout=args.refresh_timeout, payload={})
-                ok = isinstance(refreshed, dict) and refreshed.get('status') == 'ok'
+                refreshed = request_json_http('POST', f'{base_url}/api/refresh', timeout=args.refresh_timeout, payload={}, opener=opener)
+                ok = False
+                detail = ''
+                if isinstance(refreshed, dict) and refreshed.get('status') == 'accepted':
+                    job_id = str(refreshed.get('job_id') or '').strip()
+                    if not job_id:
+                        raise RuntimeError('refresh accepted but missing job_id')
+                    job = wait_for_refresh_job(
+                        base_url,
+                        job_id=job_id,
+                        refresh_timeout=args.refresh_timeout,
+                        request_timeout=args.request_timeout,
+                    )
+                    ok = str(job.get('status', '')).lower() == 'ok'
+                    detail = f'job_id={job_id}, generated_at={(job.get("result") or {}).get("generated_at", "")}'
+                elif isinstance(refreshed, dict) and refreshed.get('status') == 'ok':
+                    ok = True
+                    detail = f"snapshot_id={refreshed.get('snapshot_id')}"
+                else:
+                    detail = f'unexpected response: {refreshed}'
                 add_check(
                     checks,
                     'refresh',
                     started,
                     'ok' if ok else 'error',
-                    f"snapshot_id={refreshed.get('snapshot_id') if isinstance(refreshed, dict) else ''}",
+                    detail,
                 )
                 all_ok = all_ok and ok
             except Exception as exc:
                 detail = str(exc)
-                if (not args.strict_refresh) and 'timed out' in detail.lower():
+                if (not args.strict_refresh) and ('timed out' in detail.lower() or 'timeout' in detail.lower()):
                     add_check(checks, 'refresh', started, 'warning', detail)
                 else:
                     add_check(checks, 'refresh', started, 'error', detail)
                     all_ok = False
+
+        started = time.time()
+        try:
+            refresh_latest = request_json_http('GET', f'{base_url}/api/refresh/latest', timeout=args.request_timeout, opener=opener)
+            ok = isinstance(refresh_latest, dict) and refresh_latest.get('status') == 'ok'
+            job = refresh_latest.get('job') if isinstance(refresh_latest, dict) else None
+            job_status = (job or {}).get('status') if isinstance(job, dict) else None
+            add_check(checks, 'refresh_latest', started, 'ok' if ok else 'error', f'job_status={job_status}')
+            all_ok = all_ok and ok
+        except Exception as exc:
+            add_check(checks, 'refresh_latest', started, 'error', str(exc))
+            all_ok = False
 
         started = time.time()
         latest_snapshot: Dict[str, Any] | None = None
@@ -210,6 +311,29 @@ def run_local_smoke(args: argparse.Namespace) -> Dict[str, Any]:
             all_ok = all_ok and ok
         except Exception as exc:
             add_check(checks, 'snapshots', started, 'error', str(exc))
+            all_ok = False
+
+        started = time.time()
+        try:
+            config_payload = request_json_http('GET', f'{base_url}/api/config', timeout=args.request_timeout, opener=opener)
+            config = config_payload.get('config') if isinstance(config_payload, dict) else {}
+            ok = isinstance(config_payload, dict) and config_payload.get('status') == 'ok' and isinstance(config, dict)
+            detail = f"days={config.get('days')}, max_workers={config.get('max_workers')}"
+            add_check(checks, 'config', started, 'ok' if ok else 'error', detail)
+            all_ok = all_ok and ok
+        except Exception as exc:
+            add_check(checks, 'config', started, 'error', str(exc))
+            all_ok = False
+
+        started = time.time()
+        try:
+            stores_payload = request_json_http('GET', f'{base_url}/api/stores', timeout=args.request_timeout)
+            stores = stores_payload.get('stores') if isinstance(stores_payload, dict) else []
+            ok = isinstance(stores_payload, dict) and stores_payload.get('status') == 'ok' and isinstance(stores, list)
+            add_check(checks, 'stores', started, 'ok' if ok else 'error', f'count={len(stores) if isinstance(stores, list) else 0}')
+            all_ok = all_ok and ok
+        except Exception as exc:
+            add_check(checks, 'stores', started, 'error', str(exc))
             all_ok = False
 
         started = time.time()
@@ -231,6 +355,25 @@ def run_local_smoke(args: argparse.Namespace) -> Dict[str, Any]:
             all_ok = all_ok and ok
         except Exception as exc:
             add_check(checks, 'latest_snapshot', started, 'error', str(exc))
+            all_ok = False
+
+        started = time.time()
+        try:
+            dashboard_latest = request_json_http(
+                'GET',
+                f'{base_url}/api/dashboard/latest',
+                timeout=args.request_timeout,
+            )
+            dashboard_payload = dashboard_latest.get('payload') if isinstance(dashboard_latest, dict) else {}
+            ok = isinstance(dashboard_latest, dict) and dashboard_latest.get('status') == 'ok' and isinstance(dashboard_payload, dict)
+            detail = (
+                f"snapshot_id={(dashboard_payload or {}).get('snapshot_id')}, "
+                f"store_count={len((dashboard_payload or {}).get('results') or [])}"
+            )
+            add_check(checks, 'dashboard_latest', started, 'ok' if ok else 'error', detail)
+            all_ok = all_ok and ok
+        except Exception as exc:
+            add_check(checks, 'dashboard_latest', started, 'error', str(exc))
             all_ok = False
 
         store_code = extract_first_store_code(latest_snapshot)
@@ -261,6 +404,47 @@ def run_local_smoke(args: argparse.Namespace) -> Dict[str, Any]:
             all_ok = all_ok and ok
         except Exception as exc:
             add_check(checks, 'ozon_api_catalog', started, 'error', str(exc))
+            all_ok = False
+
+        started = time.time()
+        probe_store_filter = str(args.store or '').strip()
+        if not probe_store_filter:
+            probe_store_filter = store_code
+        try:
+            probe_payload = {
+                'days': min(args.days, 3),
+                'request_timeout': min(args.request_timeout, 30),
+                'store_filter': probe_store_filter,
+            }
+            probe_result = request_json_http(
+                'POST',
+                f'{base_url}/api/ozon/probe',
+                timeout=max(args.request_timeout, 30),
+                payload=probe_payload,
+                opener=opener,
+            )
+            ok = isinstance(probe_result, dict) and probe_result.get('status') == 'ok' and isinstance(probe_result.get('probe'), dict)
+            probe = probe_result.get('probe') if isinstance(probe_result, dict) else {}
+            detail = (
+                f"probe_status={(probe or {}).get('status')}, "
+                f"errors={len((probe or {}).get('errors') or [])}, "
+                f"warnings={len((probe or {}).get('warnings') or [])}"
+            )
+            add_check(checks, 'ozon_probe_run', started, 'ok' if ok else 'error', detail)
+            all_ok = all_ok and ok
+        except Exception as exc:
+            add_check(checks, 'ozon_probe_run', started, 'error', str(exc))
+            all_ok = False
+
+        started = time.time()
+        try:
+            probe_latest = request_json_http('GET', f'{base_url}/api/ozon/probe/latest', timeout=args.request_timeout, opener=opener)
+            ok = isinstance(probe_latest, dict) and probe_latest.get('status') == 'ok'
+            probe_status = ((probe_latest.get('probe') or {}) if isinstance(probe_latest, dict) else {}).get('status')
+            add_check(checks, 'ozon_probe_latest', started, 'ok' if ok else 'error', f'probe_status={probe_status}')
+            all_ok = all_ok and ok
+        except Exception as exc:
+            add_check(checks, 'ozon_probe_latest', started, 'error', str(exc))
             all_ok = False
     finally:
         if process and process.poll() is None:
@@ -299,6 +483,14 @@ def run_ozon_probe(args: argparse.Namespace) -> Dict[str, Any]:
         add_check(checks, 'ozon_product_prices', started, 'ok', f'count={len(prices)}')
     except Exception as exc:
         add_check(checks, 'ozon_product_prices', started, 'error', str(exc))
+        all_ok = False
+
+    started = time.time()
+    try:
+        warehouses = fetch_warehouses(store, limit=100, timeout=args.request_timeout)
+        add_check(checks, 'ozon_warehouses', started, 'ok', f'count={len(warehouses)}')
+    except Exception as exc:
+        add_check(checks, 'ozon_warehouses', started, 'error', str(exc))
         all_ok = False
 
     started = time.time()
