@@ -1,0 +1,23 @@
+[Unit]
+Description=Ozon Dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ozon-work
+Environment=PYTHONIOENCODING=utf-8
+Environment=OZON_HOST=127.0.0.1
+Environment=OZON_PORT=8765
+Environment=OZON_DB_PATH=/opt/ozon-work/deploy/data/ozon_metrics.db
+Environment=OZON_CONFIG_PATH=/opt/ozon-work/deploy/secrets/ozon_accounts.json
+Environment=OZON_SECURE_COOKIES=true
+Environment=OZON_SESSION_TTL_HOURS=24
+EnvironmentFile=-/opt/ozon-work/deploy/ozon-dashboard.env
+ExecStart=/opt/ozon-work/.venv/bin/python run_ozon_dashboard.py --serve
+Restart=always
+RestartSec=5
+User=ozon
+Group=ozon
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,24 @@
+services:
+  ozon-dashboard:
+    build: .
+    container_name: ozon-dashboard
+    ports:
+      - "8765:8765"
+    environment:
+      OZON_HOST: ${OZON_HOST:-0.0.0.0}
+      OZON_PORT: ${OZON_PORT:-8765}
+      OZON_DB_PATH: ${OZON_DB_PATH:-/app/data/ozon_metrics.db}
+      OZON_CONFIG_PATH: ${OZON_CONFIG_PATH:-/app/secrets/ozon_accounts.json}
+      OZON_ADMIN_USERNAME: ${OZON_ADMIN_USERNAME:-}
+      OZON_ADMIN_PASSWORD: ${OZON_ADMIN_PASSWORD:-}
+      OZON_DASHBOARD_DAYS: ${OZON_DASHBOARD_DAYS:-7}
+      OZON_MAX_WORKERS: ${OZON_MAX_WORKERS:-4}
+      OZON_LIMIT_CAMPAIGNS: ${OZON_LIMIT_CAMPAIGNS:-0}
+      OZON_SESSION_TTL_HOURS: ${OZON_SESSION_TTL_HOURS:-24}
+      OZON_SECURE_COOKIES: ${OZON_SECURE_COOKIES:-false}
+      OZON_LOGIN_RATE_WINDOW_SECONDS: ${OZON_LOGIN_RATE_WINDOW_SECONDS:-300}
+      OZON_LOGIN_RATE_MAX_ATTEMPTS: ${OZON_LOGIN_RATE_MAX_ATTEMPTS:-8}
+    volumes:
+      - ./deploy/data:/app/data
+      - ./deploy/secrets:/app/secrets
+    restart: unless-stopped
